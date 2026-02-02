@@ -23,7 +23,7 @@ services:
       - key: ADMIN_EMAIL
         value: "admin@example.com"
       - key: ADMIN_PASSWORD
-        generateValue: true
+        value: "Admin@2026SMRPS"
 
 databases:
   - name: haderech-db
