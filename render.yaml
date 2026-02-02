@@ -4,6 +4,7 @@ services:
     env: python
     buildCommand: "./build.sh"
     startCommand: "gunicorn config.wsgi:application"
+    plan: free
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -20,5 +21,6 @@ services:
 
 databases:
   - name: haderech-db
+    plan: free
     databaseName: haderech_smrps
     user: haderech_user
