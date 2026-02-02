@@ -1,0 +1,711 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block title %}Result Report Sheet - {{ school_class.name }}{% endblock %}
+
+{% block content %}
+<div class="report-sheet-container">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <a href="{% url 'portal:teacher_class_management' school_class.id %}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Class
+            </a>
+            <h1>Result Report Sheet</h1>
+            <p class="subtitle">{{ school_class.name }} - Comprehensive Per-Student Assessment</p>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-section card">
+        <div class="control-row">
+            <div class="control-group">
+                <label for="sessionSelect">Academic Session</label>
+                <select id="sessionSelect" class="form-select">
+                    {% for session in sessions %}
+                    <option value="{{ session.id }}" {% if session.is_active %}selected{% endif %}>
+                        {{ session.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="termSelect">Term</label>
+                <select id="termSelect" class="form-select">
+                    {% for value, label in terms %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Student Sidebar -->
+        <div class="student-sidebar card">
+            <h3>Students List</h3>
+            <div class="student-list" id="studentList">
+                {% for student in students %}
+                <div class="student-item" data-student-id="{{ student.id }}">
+                    <span class="student-name">{{ student.last_name }} {{ student.first_name }}</span>
+                    <span class="status-indicator"><i class="fas fa-check-circle"></i></span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Assessment Form -->
+        <div class="assessment-form card" id="assessmentForm" style="display: none;">
+            <div class="student-info-header">
+                <h2 id="currentStudentName">Student Name</h2>
+                <p id="currentStudentAdmission" class="text-muted">Admission No.</p>
+            </div>
+
+            <hr>
+
+            <!-- Attendance Section -->
+            <div class="form-section">
+                <h3><i class="fas fa-calendar-check"></i> Attendance</h3>
+                <div class="grid-layout attendance-grid">
+                    <div class="input-group">
+                        <label>Times School Opened</label>
+                        <input type="number" id="timesOpened" class="form-input" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Times Present</label>
+                        <input type="number" id="timesPresent" class="form-input" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traits Section -->
+            <div class="form-section">
+                <div class="traits-layout">
+                    <!-- Affective Traits -->
+                    <div class="trait-column">
+                        <h3><i class="fas fa-heart"></i> Affective Traits</h3>
+                        <div class="trait-grid" id="affectiveTraits">
+                            <div class="trait-item">
+                                <label>Punctuality</label>
+                                <select class="trait-select" data-trait="punctuality">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Mental Alertness</label>
+                                <select class="trait-select" data-trait="mental_alertness">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Respect</label>
+                                <select class="trait-select" data-trait="respect">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Neatness</label>
+                                <select class="trait-select" data-trait="neatness">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Honesty</label>
+                                <select class="trait-select" data-trait="honesty">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Politeness</label>
+                                <select class="trait-select" data-trait="politeness">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Relationship with Peers</label>
+                                <select class="trait-select" data-trait="relationship_with_peers">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Willingness to Learn</label>
+                                <select class="trait-select" data-trait="willingness_to_learn">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Spirit of Teamwork</label>
+                                <select class="trait-select" data-trait="spirit_of_teamwork">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Psychomotor Traits -->
+                    <div class="trait-column">
+                        <h3><i class="fas fa-running"></i> Psychomotor Traits</h3>
+                        <div class="trait-grid" id="psychomotorTraits">
+                            <div class="trait-item">
+                                <label>Games & Sports</label>
+                                <select class="trait-select" data-trait="games_and_sports">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Verbal Skills</label>
+                                <select class="trait-select" data-trait="verbal_skills">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Artistic Creativity</label>
+                                <select class="trait-select" data-trait="artistic_creativity">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Musical Skills</label>
+                                <select class="trait-select" data-trait="musical_skills">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="trait-item">
+                                <label>Dance Skills</label>
+                                <select class="trait-select" data-trait="dance_skills">
+                                    {% for value, label in rating_choices %}
+                                    <option value="{{ value }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="form-footer card">
+                <div class="button-group">
+                    <button id="saveCurrent" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save Current
+                    </button>
+                    <button id="saveAndNext" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> Save & Next Student
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome View -->
+        <div class="welcome-section card" id="welcomeSection">
+            <div class="welcome-content">
+                <i class="fas fa-user-edit"></i>
+                <h2>Select a student to begin entry</h2>
+                <p>Click on any student in the left sidebar to start entering their attendance and traits.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Key Legend -->
+    <div class="rating-legend card">
+        <h4>Rating Key</h4>
+        <div class="legend-items">
+            <span><strong>A</strong> = Excellent</span>
+            <span><strong>B</strong> = Very Good</span>
+            <span><strong>C</strong> = Good</span>
+            <span><strong>D</strong> = Pass</span>
+            <span><strong>E</strong> = Fair</span>
+            <span><strong>F</strong> = Fail</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-sheet-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-header {
+        margin-bottom: 30px;
+    }
+
+    .back-link {
+        color: #667eea;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .page-header h1 {
+        color: #1a1a2e;
+        margin: 0;
+        font-size: 28px;
+    }
+
+    .subtitle {
+        color: #666;
+        margin-top: 5px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .control-row {
+        display: flex;
+        gap: 20px;
+    }
+
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .control-group label {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .main-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 20px;
+        min-height: 600px;
+        align-items: start;
+    }
+
+    /* Sidebar */
+    .student-sidebar {
+        max-height: 800px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .student-sidebar h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+    }
+
+    .student-list {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .student-item {
+        padding: 12px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s;
+    }
+
+    .student-item:hover {
+        background: #f0f4ff;
+    }
+
+    .student-item.active {
+        background: #667eea;
+        color: white;
+    }
+
+    .status-indicator {
+        display: none;
+    }
+
+    .student-item.completed .status-indicator {
+        display: inline-block;
+        color: #28a745;
+    }
+
+    .student-item.active.completed .status-indicator {
+        color: white;
+    }
+
+    /* Assessment Form */
+    .student-info-header h2 {
+        margin: 0;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+    }
+
+    .form-section h3 {
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .grid-layout {
+        display: grid;
+        gap: 20px;
+    }
+
+    .attendance-grid {
+        grid-template-columns: 1fr 1fr;
+        max-width: 500px;
+    }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .input-group label {
+        font-size: 14px;
+        color: #555;
+    }
+
+    .traits-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+    }
+
+    .trait-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .trait-item {
+        display: grid;
+        grid-template-columns: 1fr 60px;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .trait-item label {
+        font-size: 14px;
+    }
+
+    .form-select,
+    .form-input,
+    .trait-select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .trait-select {
+        text-align: center;
+    }
+
+    .form-footer {
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end;
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        border-top: 1px solid #eee;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 15px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        opacity: 0.9;
+    }
+
+    /* Welcome Section */
+    .welcome-section {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 100px 20px;
+        color: #888;
+    }
+
+    .welcome-content i {
+        font-size: 64px;
+        margin-bottom: 20px;
+        color: #ddd;
+    }
+
+    .rating-legend {
+        background: #f8f9fa;
+    }
+
+    .legend-items {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .legend-items span {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .legend-items strong {
+        color: #667eea;
+    }
+
+    /* Toast notification */
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+    }
+
+    .toast.success {
+        background: #28a745;
+    }
+
+    .toast.error {
+        background: #dc3545;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    const classId = {{ school_class.id }};
+    let currentStudentId = null;
+    let studentsData = {};
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Student Item Click
+        document.querySelectorAll('.student-item').forEach(item => {
+            item.addEventListener('click', function () {
+                loadStudentAssessment(this.dataset.studentId);
+            });
+        });
+
+        // Save Current
+        document.getElementById('saveCurrent').addEventListener('click', () => saveStudentData(false));
+
+        // Save and Next
+        document.getElementById('saveAndNext').addEventListener('click', () => saveStudentData(true));
+
+        // Session/Term Change reload
+        document.getElementById('sessionSelect').addEventListener('change', () => {
+            if (currentStudentId) loadStudentAssessment(currentStudentId);
+        });
+        document.getElementById('termSelect').addEventListener('change', () => {
+            if (currentStudentId) loadStudentAssessment(currentStudentId);
+        });
+    });
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function loadStudentAssessment(studentId) {
+        const session_id = document.getElementById('sessionSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        // UI Update
+        document.querySelectorAll('.student-item').forEach(i => i.classList.remove('active'));
+        const activeItem = document.querySelector(`.student-item[data-student-id="${studentId}"]`);
+        if (activeItem) activeItem.classList.add('active');
+
+        currentStudentId = studentId;
+        document.getElementById('welcomeSection').style.display = 'none';
+        document.getElementById('assessmentForm').style.display = 'block';
+
+        // Set student name in form
+        document.getElementById('currentStudentName').textContent = activeItem.querySelector('.student-name').textContent;
+        document.getElementById('currentStudentAdmission').textContent = "Loading data...";
+
+        // Fetch Data
+        fetch(`/portal/teacher/${classId}/assessments/get/?session_id=${session_id}&term=${term}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const student = data.students.find(s => s.student_id == studentId);
+                    if (student) {
+                        document.getElementById('currentStudentAdmission').textContent = student.admission;
+                        document.getElementById('timesOpened').value = data.class_info.times_school_opened;
+                        document.getElementById('timesPresent').value = student.attendance.times_present;
+
+                        // Affective Traits
+                        Object.keys(student.affective_traits).forEach(trait => {
+                            const sel = document.querySelector(`#affectiveTraits [data-trait="${trait}"]`);
+                            if (sel) sel.value = student.affective_traits[trait];
+                        });
+
+                        // Psychomotor Traits
+                        Object.keys(student.psychomotor_traits).forEach(trait => {
+                            const sel = document.querySelector(`#psychomotorTraits [data-trait="${trait}"]`);
+                            if (sel) sel.value = student.psychomotor_traits[trait];
+                        });
+                    }
+                }
+            });
+    }
+
+    async function saveStudentData(next) {
+        if (!currentStudentId) return;
+
+        const session_id = document.getElementById('sessionSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        try {
+            // 1. Save Class Info (Times Opened)
+            const classInfoRes = await fetch(`/portal/teacher/${classId}/assessments/class-info/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({
+                    session_id, term,
+                    times_school_opened: document.getElementById('timesOpened').value,
+                    next_term_begins: null // Keep as is for now
+                })
+            });
+
+            // 2. Save Attendance
+            const attRes = await fetch(`/portal/teacher/${classId}/assessments/attendance/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({
+                    session_id, term,
+                    attendance: [{
+                        student_id: currentStudentId,
+                        times_present: document.getElementById('timesPresent').value
+                    }]
+                })
+            });
+
+            // 3. Save Affective Traits
+            const affPayload = { student_id: currentStudentId };
+            document.querySelectorAll('#affectiveTraits .trait-select').forEach(s => {
+                affPayload[s.dataset.trait] = s.value;
+            });
+            const affRes = await fetch(`/portal/teacher/${classId}/assessments/affective-traits/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({
+                    session_id, term,
+                    traits: [affPayload]
+                })
+            });
+
+            // 4. Save Psychomotor Traits
+            const psyPayload = { student_id: currentStudentId };
+            document.querySelectorAll('#psychomotorTraits .trait-select').forEach(s => {
+                psyPayload[s.dataset.trait] = s.value;
+            });
+            const psyRes = await fetch(`/portal/teacher/${classId}/assessments/psychomotor-traits/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({
+                    session_id, term,
+                    traits: [psyPayload]
+                })
+            });
+
+            showToast('Student data saved successfully');
+            document.querySelector(`.student-item[data-student-id="${currentStudentId}"]`).classList.add('completed');
+
+            if (next) {
+                moveToNextStudent();
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error saving data', 'error');
+        }
+    }
+
+    function moveToNextStudent() {
+        const items = Array.from(document.querySelectorAll('.student-item'));
+        const index = items.findIndex(i => i.dataset.studentId == currentStudentId);
+        if (index < items.length - 1) {
+            loadStudentAssessment(items[index + 1].dataset.studentId);
+        } else {
+            showToast('All students processed!', 'success');
+        }
+    }
+</script>
+{% endblock %}

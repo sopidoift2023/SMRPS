@@ -1,0 +1,46 @@
+{% extends 'portal/base.html' %}
+{% block content %}
+<h2>Generate CBT Questions</h2>
+<form method="post">
+    {% csrf_token %}
+    {% if options and not school_class and not subject %}
+    <div class="mb-3 row">
+        <div class="col-md-6">
+            <label class="form-label">Class</label>
+            <select name="class_id" class="form-select" required>
+                <option value="">Select Class</option>
+                {% for opt in options %}
+                    <option value="{{ opt.class_id }}" {% if opt.class_id|stringformat:'s' == selected_class_id|stringformat:'s' %}selected{% endif %}>{{ opt.class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Subject</label>
+            <select name="subject_id" class="form-select" required>
+                <option value="">Select Subject</option>
+                {% for opt in options %}
+                    {% if opt.class_id|stringformat:'s' == selected_class_id|stringformat:'s' or options|length == 1 %}
+                        <option value="{{ opt.subject_id }}" {% if opt.subject_id|stringformat:'s' == selected_subject_id|stringformat:'s' %}selected{% endif %}>{{ opt.subject_name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    {% elif school_class and subject %}
+    <div class="mb-3">
+        <span class="badge bg-primary">Class: {{ school_class.name }}</span>
+        <span class="badge bg-info ms-2">Subject: {{ subject.name }}</span>
+        <input type="hidden" name="class_id" value="{{ school_class.id }}">
+        <input type="hidden" name="subject_id" value="{{ subject.id }}">
+    </div>
+    {% endif %}
+    <div class="mb-3">
+        <label>Number of Questions:</label>
+        <input type="number" name="num_questions" value="10" min="1" max="50" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-success">Generate Questions</button>
+    {% if school_class and subject %}
+    <a href="{% url 'teacher_review_cbt_questions' school_class.id subject.id %}" class="btn btn-secondary ms-2">Cancel</a>
+    {% endif %}
+</form>
+{% endblock %}

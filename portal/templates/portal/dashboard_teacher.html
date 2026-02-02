@@ -1,0 +1,380 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Teacher Dashboard - SMRPS{% endblock %}
+
+{% block sidebar %}
+<div class="nav-section">
+    <div class="nav-title"><i class="fas fa-bars"></i> Main Menu</div>
+    <a href="{% url 'portal:teacher_dashboard' %}" class="active">
+        <i class="fas fa-home"></i> Dashboard
+    </a>
+    <a href="{% url 'portal:teacher_result_entry' %}">
+        <i class="fas fa-edit"></i> Enter Results
+    </a>
+</div>
+
+<div class="nav-section">
+    <div class="nav-title"><i class="fas fa-book"></i> My Classes</div>
+    {% for cls in assigned_classes %}
+    <a href="{% url 'portal:teacher_class_management' cls.id %}" title="{{ cls.name }}">
+        <i class="fas fa-users"></i> {{ cls.name }}
+    </a>
+    {% empty %}
+    <p style="padding: 0 1.5rem; font-size: 0.9rem; color: #94a3b8;">No classes assigned</p>
+    {% endfor %}
+</div>
+
+<div class="nav-section">
+    <div class="nav-title"><i class="fas fa-cog"></i> Settings</div>
+    <a href="{% url 'portal:change_password' %}">
+        <i class="fas fa-key" style="width: 20px; text-align: center;"></i> Change Password
+    </a>
+    <form action="{% url 'logout' %}" method="post" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit"
+            style="display: flex; align-items: center; gap: 1rem; color: #cbd5e1; text-decoration: none; padding: 0.75rem 1.5rem; background: transparent; border: none; width: 100%; cursor: pointer; transition: all 0.3s; border-left: 3px solid transparent; font-size: inherit; font-family: inherit;">
+            <i class="fas fa-sign-out-alt" style="width: 20px; text-align: center;"></i> Logout
+        </button>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Title -->
+<div class="page-title">
+    <i class="fas fa-tachometer-alt"></i>
+    <div>
+        <h1>Teacher Dashboard</h1>
+        <p class="text-muted mb-0">Welcome back, {{ request.user.get_full_name }}!</p>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4">
+    {% if stats.total_classes %}
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card">
+            <h5><i class="fas fa-chalkboard-user"></i> Classes Assigned</h5>
+            <div class="stat-number">{{ stats.total_classes }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if stats.total_students %}
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card" style="border-left-color: #10b981;">
+            <h5><i class="fas fa-users"></i> Total Students</h5>
+            <div class="stat-number" style="color: #10b981;">{{ stats.total_students }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if stats.total_subjects %}
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card" style="border-left-color: #f59e0b;">
+            <h5><i class="fas fa-book"></i> Subjects Teaching</h5>
+            <div class="stat-number" style="color: #f59e0b;">{{ stats.total_subjects }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card" style="border-left-color: #8b5cf6;">
+            <h5><i class="fas fa-chart-bar"></i> Results Entered</h5>
+            <div class="stat-number" style="color: #8b5cf6;">{{ stats.results_entered|default:"0" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-flash"></i> Quick Actions
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <a href="{% url 'portal:teacher_result_entry' %}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus-circle"></i> Enter Student Results
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="#" class="btn btn-outline-success w-100" data-bs-toggle="modal"
+                            data-bs-target="#cbtModal">
+                            <i class="fas fa-laptop-code"></i> Manage CBT Questions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Classes Overview -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list"></i> My Assigned Classes
+            </div>
+            <div class="card-body p-0">
+                {% if assigned_classes %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-chalkboard"></i> Class</th>
+                                <th><i class="fas fa-book"></i> Subjects</th>
+                                <th><i class="fas fa-users"></i> Students</th>
+                                <th style="text-align: center;"><i class="fas fa-cogs"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for class in assigned_classes %}
+                            <tr>
+                                <td>
+                                    <strong>{{ class.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ class.school.name }}</small>
+                                </td>
+                                <td>
+                                    {% for subject in class.class_subjects.all %}
+                                    <span class="badge bg-info">{{ subject.subject.name }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ class.students.count }} Students</span>
+                                    {% if request.user.teacher_profile == class.form_teacher %}
+                                    <br><span class="badge bg-warning text-dark mt-1"><i class="fas fa-star"></i> Form
+                                        Teacher</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center;">
+                                    <div class="btn-group">
+                                        <!-- Assessments button removed as requested -->
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>No classes assigned yet. Please contact your administrator.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Results Modal -->
+<div class="modal fade" id="viewResultsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-eye"></i> View Student Results</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Select Class</strong></label>
+                            <select class="form-control" id="viewClassSelect">
+                                <option value="">Choose Class...</option>
+                                {% for class in assigned_classes %}
+                                <option value="{{ class.id }}">{{ class.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Select Subject</strong></label>
+                            <select class="form-control" id="viewSubjectSelect">
+                                <option value="">Choose Subject...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Academic Session</strong></label>
+                            <select class="form-control" id="viewSessionSelect">
+                                <option value="">Choose Session...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Term</strong></label>
+                            <select class="form-control" id="viewTermSelect">
+                                <option value="">Choose Term...</option>
+                                <option value="First">First Term</option>
+                                <option value="Second">Second Term</option>
+                                <option value="Third">Third Term</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+                <div id="resultsDisplay" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="loadResults()">
+                    <i class="fas fa-search"></i> Load Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-print"></i> Print Results</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Select report to print:</strong></p>
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" onclick="printClassResults()">
+                        <i class="fas fa-file-pdf text-danger"></i> Class Results Summary
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="printStudentTermResults()">
+                        <i class="fas fa-file-pdf text-danger"></i> Student Term Results
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="printClassAverage()">
+                        <i class="fas fa-file-pdf text-danger"></i> Class Average & Positions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CBT Modal for Class & Subject Selection -->
+<div class="modal fade" id="cbtModal" tabindex="-1" aria-labelledby="cbtModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="cbtModalLabel"><i class="fas fa-laptop-code"></i> Manage CBT Questions</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="cbtForm" onsubmit="event.preventDefault(); goToCBT();">
+                    <div class="mb-3">
+                        <label for="cbtClassSelect" class="form-label">Select Class</label>
+                        <select class="form-select" id="cbtClassSelect" required>
+                            <option value="">-- Choose Class --</option>
+                            {% for class in assigned_classes %}
+                            <option value="{{ class.id }}">{{ class.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cbtSubjectSelect" class="form-label">Select Subject</label>
+                        <select class="form-select" id="cbtSubjectSelect" required>
+                            <option value="">-- Choose Subject --</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100"><i class="fas fa-arrow-right"></i>
+                        Continue</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Assistant Chatbot Floating Button -->
+<button id="aiAssistantBtn" class="btn btn-primary rounded-circle shadow"
+    style="position: fixed; bottom: 2rem; right: 2rem; z-index: 1050; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 2rem;"
+    title="Open AI Assistant" onclick="window.location.href='/portal/ai-assistant/'">
+    <i class="fas fa-robot"></i>
+</button>
+
+<!-- Robustly pass JSON data to JavaScript using Django json_script -->
+{{ class_subjects_json|json_script:"class-subjects-data" }}
+
+<script>
+    function loadClassData(classId) {
+        // Redirect to the new interactive class management dashboard
+        window.location.href = `/portal/teacher/${classId}/`;
+    }
+
+    function loadResults() {
+        alert('Please select a class from "My Assigned Classes" below and click Manage to view results');
+    }
+
+    function printClassResults() {
+        alert('Please use the class management dashboard to view and generate results');
+    }
+
+    function printStudentTermResults() {
+        alert('Please use the class management dashboard to view and generate results');
+    }
+
+    function printClassAverage() {
+        alert('Please use the class management dashboard to view and generate results');
+    }
+
+    // Populate subjects based on selected class using JSON data from script tag
+    function updateCBTSubjects() {
+        console.log("CBT: updateCBTSubjects triggered");
+        const classSelect = document.getElementById('cbtClassSelect');
+        const subjectSelect = document.getElementById('cbtSubjectSelect');
+        if (!classSelect || !subjectSelect) return;
+
+        const classId = classSelect.value;
+        subjectSelect.innerHTML = '<option value="">-- Choose Subject --</option>';
+
+        try {
+            const dataElement = document.getElementById('class-subjects-data');
+            if (!dataElement) {
+                console.error("CBT: Data element #class-subjects-data not found");
+                return;
+            }
+
+            const classSubjectsRaw = JSON.parse(dataElement.textContent);
+            // Handle cases where the data might be a JSON string that needs secondary parsing
+            const classSubjects = typeof classSubjectsRaw === 'string' ? JSON.parse(classSubjectsRaw) : classSubjectsRaw;
+
+            console.log("CBT: Loaded classSubjects for class", classId, classSubjects?.[classId]);
+
+            if (classId && classSubjects && classSubjects[classId]) {
+                classSubjects[classId].forEach(subj => {
+                    const opt = document.createElement('option');
+                    opt.value = subj.id;
+                    opt.textContent = subj.name;
+                    subjectSelect.appendChild(opt);
+                });
+            } else if (classId) {
+                console.warn("CBT: No subjects found in data for classId:", classId);
+            }
+        } catch (e) {
+            console.error("CBT: Error parsing subject data", e);
+        }
+    }
+
+    // Update on class change
+    document.getElementById('cbtClassSelect')?.addEventListener('change', updateCBTSubjects);
+
+    // Update when modal is shown (to handle pre-selected values)
+    document.getElementById('cbtModal')?.addEventListener('shown.bs.modal', updateCBTSubjects);
+    function goToCBT() {
+        const classId = document.getElementById('cbtClassSelect').value;
+        const subjectId = document.getElementById('cbtSubjectSelect').value;
+        if (classId && subjectId) {
+            window.location.href = `/academics/cbt/review/${classId}/${subjectId}/`;
+        }
+    }
+
+</script>
+
+{% endblock %}

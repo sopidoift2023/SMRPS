@@ -1,0 +1,467 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar: Tools & History -->
+        <div class="col-md-3">
+            <div class="card shadow-sm mb-4 border-0" style="border-radius: 15px;">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3"><i class="fas fa-magic me-2 text-primary"></i>AI Magic Tools
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary text-start" onclick="showGenerator('QUESTION')">
+                            <i class="fas fa-book-open me-2"></i>Generate Questions
+                        </button>
+                        <button class="btn btn-outline-success text-start" onclick="showGenerator('NOTE')">
+                            <i class="fas fa-file-alt me-2"></i>Generate Lesson Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-3"><i class="fas fa-history me-2 text-secondary"></i>Recent
+                        Downloads</h5>
+                    <div class="list-group list-group-flush" id="recent-list">
+                        {% for content in recent_contents %}
+                        <a href="{% url 'portal:ai_assistant_download' content.id %}"
+                            class="list-group-item list-group-item-action border-0 px-0">
+                            <div class="d-flex w-100 justify-content-between">
+                                <small class="fw-bold">{{ content.subject }}</small>
+                                <small class="text-muted">{{ content.created_at|date:"d M" }}</small>
+                            </div>
+                            <small class="text-truncate d-block text-muted">{{ content.topic }}</small>
+                        </a>
+                        {% empty %}
+                        <p class="text-muted small">No recent generations yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat / Generator Area -->
+        <div class="col-md-9">
+            <div class="card shadow-lg border-0 h-100" style="border-radius: 20px; min-height: 600px;">
+                <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center"
+                    style="border-radius: 20px 20px 0 0;">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary text-white p-2 rounded-circle me-3">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold">SMRPS AI Assistant</h5>
+                            <small class="text-success"><i class="fas fa-circle me-1" style="font-size: 8px;"></i>
+                                Powered by DeepSeek (WAEC Aligned)</small>
+                        </div>
+                    </div>
+                    <div id="status-indicator" class="d-none">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <span class="ms-2 small text-muted">AI is thinking...</span>
+                    </div>
+                </div>
+
+                <div class="card-body d-flex flex-column" id="chat-container">
+                    <!-- Chat Messages Area -->
+                    <div id="message-area" class="flex-grow-1 overflow-auto p-3 mb-3"
+                        style="background: #f8f9fa; border-radius: 15px; max-height: 450px;">
+                        <div class="chat-bubble ai-bubble mb-3">
+                            <div class="p-3 bg-white shadow-sm"
+                                style="border-radius: 0 15px 15px 15px; border-left: 4px solid #0d6efd;">
+                                Hello Teacher! I'm your AI assistant. I can help you generate <strong>WAEC-aligned exam
+                                    questions</strong> or <strong>detailed lesson notes</strong> in seconds.
+                                <br><br>
+                                Use the tools on the left or just type a request below.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generator Form (Hidden by default) -->
+                    <div id="generator-form" class="p-3 border rounded mb-3 d-none bg-light shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0" id="gen-title">Generate Questions</h6>
+                            <button type="button" class="btn-close" onclick="hideGenerator()"></button>
+                        </div>
+                        <div class="row g-3">
+                            <input type="hidden" id="gen-type" value="QUESTION">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Subject</label>
+                                <input type="text" id="gen-subject" class="form-control" placeholder="e.g. Mathematics">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Level</label>
+                                <select id="gen-level" class="form-select">
+                                    <option value="Senior WAEC (WASSCE)">Senior WAEC (WASSCE)</option>
+                                    <option value="Junior WAEC (BECE)">Junior WAEC (BECE)</option>
+                                    <option value="SS1">SS1</option>
+                                    <option value="SS2">SS2</option>
+                                    <option value="JSS1">JSS1</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Topic</label>
+                                <input type="text" id="gen-topic" class="form-control" placeholder="e.g. Algebra">
+                            </div>
+                            <div id="question-options" class="row g-3 mt-1">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Objective Questions</label>
+                                    <input type="number" id="num-obj" class="form-control" value="10">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Theory Questions</label>
+                                    <input type="number" id="num-theory" class="form-control" value="5">
+                                </div>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button class="btn btn-primary" onclick="triggerMagic()">
+                                    <i class="fas fa-magic me-2"></i>Generate Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="input-group">
+                        <input type="text" id="chat-input" class="form-control border-0 p-3 shadow-sm"
+                            placeholder="Ask me something or type a topic..."
+                            style="border-radius: 30px 0 0 30px; background: #fff;">
+                        <button class="btn btn-primary px-4 shadow-sm" type="button" id="send-btn"
+                            style="border-radius: 0 30px 30px 0;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for custom download/save (for chat refinements) -->
+<div class="modal fade" id="saveContentModal" tabindex="-1" aria-hidden="true">
+    ... (modal content unchanged) ...
+</div>
+
+<!-- Modal for publishing CBT -->
+<div class="modal fade" id="publishCbtModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Publish as Mock Exam (CBT)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-4">This will convert the generated questions into an interactive CBT for
+                    your students.</p>
+                <div class="mb-3">
+                    <label class="form-label">Select Class</label>
+                    <select id="cbt-class" class="form-select">
+                        {% for cls in assigned_classes %}
+                        <option value="{{ cls.id }}">{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Duration (Minutes)</label>
+                    <input type="number" id="cbt-duration" class="form-control" value="30">
+                </div>
+                <input type="hidden" id="cbt-content-id">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="processPublishCbt()">
+                    <i class="fas fa-check-circle me-1"></i> Publish Now
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+    #message-area::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    #message-area::-webkit-scrollbar-thumb {
+        background: #dee2e6;
+        border-radius: 10px;
+    }
+
+    .ai-bubble {
+        max-width: 85%;
+    }
+
+    .user-bubble {
+        max-width: 85%;
+        align-self: flex-end;
+    }
+
+    .markdown-content h1,
+    .markdown-content h2 {
+        font-size: 1.25rem;
+        margin-top: 1rem;
+        font-weight: bold;
+    }
+
+    .markdown-content p {
+        margin-bottom: 0.5rem;
+    }
+
+    .markdown-content pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+</style>
+
+<script>
+    const session_id = "{{ session_id }}";
+    const downloadUrlTemplate = "{% url 'portal:ai_assistant_download' 0 %}";
+    const chatInput = document.getElementById('chat-input');
+    const messageArea = document.getElementById('message-area');
+    const statusIndicator = document.getElementById('status-indicator');
+
+    function appendMessage(role, text, content_id = null) {
+        const div = document.createElement('div');
+        div.className = `chat-bubble ${role}-bubble mb-3 d-flex flex-column`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = `p-3 shadow-sm ${role === 'ai' ? 'bg-white' : 'bg-primary text-white'}`;
+
+        if (role === 'ai') {
+            contentDiv.style.borderRadius = "0 15px 15px 15px";
+            contentDiv.style.borderLeft = "4px solid #0d6efd";
+            contentDiv.className += " markdown-content";
+
+            // Use marked for real markdown rendering
+            contentDiv.innerHTML = marked.parse(text);
+
+            // Add download and CBT buttons if it's academic content
+            if (content_id) {
+                const hr = document.createElement('hr');
+                const btnDiv = document.createElement('div');
+                btnDiv.className = "mt-2 d-flex gap-2";
+                const downloadUrl = downloadUrlTemplate.replace('0', content_id);
+                btnDiv.innerHTML = `
+                    <a href="${downloadUrl}" class="btn btn-sm btn-success shadow-sm flex-grow-1">
+                        <i class="fas fa-file-word me-1"></i> Download Word
+                    </a>
+                    <button class="btn btn-sm btn-primary shadow-sm flex-grow-1" onclick="openPublishModal(${content_id})">
+                        <i class="fas fa-desktop me-1"></i> Convert to CBT
+                    </button>
+                `;
+                contentDiv.appendChild(hr);
+                contentDiv.appendChild(btnDiv);
+            } else if (text.length > 200) { // Likely long academic content from chat
+                const hr = document.createElement('hr');
+                const btnDiv = document.createElement('div');
+                btnDiv.className = "mt-2";
+                btnDiv.innerHTML = `<button class="btn btn-sm btn-outline-success shadow-sm" onclick="openSaveModal(\`${text.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)"><i class="fas fa-save me-1"></i> Save & Download</button>`;
+                contentDiv.appendChild(hr);
+                contentDiv.appendChild(btnDiv);
+            }
+        } else {
+            contentDiv.style.borderRadius = "15px 15px 0 15px";
+            contentDiv.innerText = text;
+        }
+
+        div.appendChild(contentDiv);
+        messageArea.appendChild(div);
+        messageArea.scrollTop = messageArea.scrollHeight;
+
+        // Code highlighting
+        contentDiv.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+    }
+
+    // Modal handling
+    const saveModal = new bootstrap.Modal(document.getElementById('saveContentModal'));
+    const publishModal = new bootstrap.Modal(document.getElementById('publishCbtModal'));
+
+    function openSaveModal(text) {
+        document.getElementById('custom-text').value = text;
+        saveModal.show();
+    }
+
+    function openPublishModal(id) {
+        document.getElementById('cbt-content-id').value = id;
+        publishModal.show();
+    }
+
+    async function processPublishCbt() {
+        const content_id = document.getElementById('cbt-content-id').value;
+        const class_id = document.getElementById('cbt-class').value;
+        const duration = document.getElementById('cbt-duration').value;
+
+        try {
+            const response = await fetch("{% url 'portal:ai_assistant_publish_exam' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ content_id, class_id, duration })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                alert(data.message);
+                publishModal.hide();
+            }
+        } catch (e) {
+            alert("Error publishing mock exam.");
+        }
+    }
+
+    async function processCustomDownload() {
+        const text = document.getElementById('custom-text').value;
+        const subject = document.getElementById('custom-subject').value;
+        const topic = document.getElementById('custom-topic').value;
+        const level = document.getElementById('custom-level').value;
+
+        if (!subject || !topic) {
+            alert("Subject and Topic are required.");
+            return;
+        }
+
+        try {
+            const response = await fetch("{% url 'portal:ai_assistant_generate' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    type: 'CUSTOM', // A new type handling for manual saves
+                    subject, topic, level,
+                    custom_text: text
+                })
+            });
+            const data = await response.json();
+            if (data.content_id) {
+                const downloadUrl = downloadUrlTemplate.replace('0', data.content_id);
+                window.location.href = downloadUrl;
+                saveModal.hide();
+            }
+        } catch (e) {
+            alert("Error saving document.");
+        }
+    }
+
+    document.getElementById('send-btn').addEventListener('click', async () => {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        appendMessage('user', message);
+        chatInput.value = '';
+        statusIndicator.classList.remove('d-none');
+
+        try {
+            const response = await fetch("{% url 'portal:ai_assistant_chat' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({ message, session_id })
+            });
+            const data = await response.json();
+            appendMessage('ai', data.response);
+        } catch (e) {
+            appendMessage('ai', "Sorry, something went wrong. Please check your connection.");
+        } finally {
+            statusIndicator.classList.add('d-none');
+        }
+    });
+
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('send-btn').click();
+    });
+
+    function showGenerator(type) {
+        document.getElementById('generator-form').classList.remove('d-none');
+        document.getElementById('gen-type').value = type;
+        document.getElementById('gen-title').innerText = type === 'QUESTION' ? 'Generate Questions' : 'Generate Lesson Note';
+        document.getElementById('question-options').style.display = type === 'QUESTION' ? 'flex' : 'none';
+        messageArea.style.maxHeight = "300px";
+    }
+
+    function hideGenerator() {
+        document.getElementById('generator-form').classList.add('d-none');
+        messageArea.style.maxHeight = "450px";
+    }
+
+    async function triggerMagic() {
+        const type = document.getElementById('gen-type').value;
+        const subject = document.getElementById('gen-subject').value;
+        const level = document.getElementById('gen-level').value;
+        const topic = document.getElementById('gen-topic').value;
+
+        if (!subject || !topic) {
+            alert("Please fill in Subject and Topic");
+            return;
+        }
+
+        statusIndicator.classList.remove('d-none');
+        hideGenerator();
+        appendMessage('user', `Generate ${type.toLowerCase()} for ${subject} (${level}) on the topic: ${topic}`);
+
+        try {
+            const payload = { type, subject, level, topic };
+            if (type === 'QUESTION') {
+                payload.num_objective = document.getElementById('num-obj').value;
+                payload.num_theory = document.getElementById('num-theory').value;
+            }
+
+            const response = await fetch("{% url 'portal:ai_assistant_generate' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            appendMessage('ai', data.result, data.content_id);
+
+            if (data.content_id) {
+                // Prepend to recent list without full reload
+                updateRecentList(subject, topic, data.content_id);
+            }
+        } catch (e) {
+            appendMessage('ai', "Error generating content. Please check your API key.");
+        } finally {
+            statusIndicator.classList.add('d-none');
+        }
+    }
+
+    function updateRecentList(subject, topic, id) {
+        const list = document.getElementById('recent-list');
+        const newItem = document.createElement('a');
+        newItem.href = downloadUrlTemplate.replace('0', id);
+        newItem.className = "list-group-item list-group-item-action border-0 px-0";
+        newItem.innerHTML = `
+            <div class="d-flex w-100 justify-content-between">
+                <small class="fw-bold">${subject}</small>
+                <small class="text-muted">Just now</small>
+            </div>
+            <small class="text-truncate d-block text-muted">${topic}</small>
+        `;
+        list.prepend(newItem);
+        // Remove "No recent" text if it exists
+        const emptyMsg = list.querySelector('p.text-muted');
+        if (emptyMsg) emptyMsg.remove();
+    }
+</script>
+{% endblock %}

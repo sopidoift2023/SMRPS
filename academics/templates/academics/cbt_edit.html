@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Edit CBT Question</h2>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label>Question Text</label>
+        <textarea name="text" class="form-control" required>{{ question.text }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label>Option A</label>
+        <input type="text" name="option_a" class="form-control" value="{{ question.option_a }}" required>
+    </div>
+    <div class="mb-3">
+        <label>Option B</label>
+        <input type="text" name="option_b" class="form-control" value="{{ question.option_b }}" required>
+    </div>
+    <div class="mb-3">
+        <label>Option C</label>
+        <input type="text" name="option_c" class="form-control" value="{{ question.option_c }}" required>
+    </div>
+    <div class="mb-3">
+        <label>Option D</label>
+        <input type="text" name="option_d" class="form-control" value="{{ question.option_d }}" required>
+    </div>
+    <div class="mb-3">
+        <label>Correct Option</label>
+        <select name="correct_option" class="form-select" required>
+            <option value="A" {% if question.correct_option == 'A' %}selected{% endif %}>A</option>
+            <option value="B" {% if question.correct_option == 'B' %}selected{% endif %}>B</option>
+            <option value="C" {% if question.correct_option == 'C' %}selected{% endif %}>C</option>
+            <option value="D" {% if question.correct_option == 'D' %}selected{% endif %}>D</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success">Save Changes</button>
+    <a href="javascript:history.back()" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

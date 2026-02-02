@@ -1,0 +1,74 @@
+{% extends 'portal/base.html' %}
+{% load static %}
+{% block content %}
+<div class="container py-4" style="max-width: 800px;" role="main" aria-label="CBT Result Dashboard">
+    <div class="card shadow mb-4" id="main-content">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0" id="cbtResultTitle">CBT Result: <span class="text-primary">{{ session.subject.name }}</span></h2>
+                <span class="badge bg-info text-dark fs-6" style="background-color: #0dcaf0; color: #212529;">{{ session.school_class.name }}</span>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4 text-center">
+                    <div class="display-4 fw-bold" style="color: {% if session.score >= 70 %}#198754{% elif session.score >= 50 %}#ffc107{% else %}#dc3545{% endif %};" aria-label="Your Score">
+                        {{ session.score|floatformat:2 }}%
+                    </div>
+                    <div class="fw-semibold">Your Score</div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="fs-2 fw-bold text-success" aria-label="Correct Answers">
+                        <i class="fas fa-check-circle"></i> {{ correct_count }}
+                    </div>
+                    <div class="fw-semibold">Correct</div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="fs-2 fw-bold text-danger" aria-label="Incorrect Answers">
+                        <i class="fas fa-times-circle"></i> {{ incorrect_count }}
+                    </div>
+                    <div class="fw-semibold">Incorrect</div>
+                </div>
+            </div>
+            <div class="alert alert-info text-center mb-4">
+                <b>Total Questions:</b> {{ total_questions }}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" aria-label="CBT Question Results">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Question</th>
+                            <th>Your Answer</th>
+                            <th>Correct Answer</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for response in responses %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ response.question.text }}</td>
+                            <td>
+                                <span class="badge bg-secondary" style="background-color: #6c757d; color: #fff;">{{ response.selected_option }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary" style="background-color: #0d6efd; color: #fff;">{{ response.question.correct_option }}</span>
+                            </td>
+                            <td>
+                                {% if response.is_correct %}
+                                    <span class="text-success" aria-label="Correct"><i class="fas fa-check-circle" aria-hidden="true"></i> <span class="visually-hidden">Correct</span> Correct</span>
+                                {% else %}
+                                    <span class="text-danger" aria-label="Wrong"><i class="fas fa-times-circle" aria-hidden="true"></i> <span class="visually-hidden">Wrong</span> Wrong</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-4">
+                <a href="/portal/" class="btn btn-lg btn-outline-primary" aria-label="Back to Dashboard" style="border-color: #0d6efd; color: #0d6efd;"><i class="fas fa-home me-1" aria-hidden="true"></i> <span class="visually-hidden">Back to Dashboard</span> Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

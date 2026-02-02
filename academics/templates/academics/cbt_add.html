@@ -1,0 +1,73 @@
+{% extends 'portal/base.html' %}
+{% block content %}
+<h2>Add New CBT Question</h2>
+<form method="post">
+    {% csrf_token %}
+    {% if options and not school_class and not subject %}
+    <div class="mb-3 row">
+        <div class="col-md-6">
+            <label class="form-label">Class</label>
+            <select name="class_id" class="form-select" required>
+                <option value="">Select Class</option>
+                {% for opt in options %}
+                    <option value="{{ opt.class_id }}" {% if opt.class_id|stringformat:'s' == selected_class_id|stringformat:'s' %}selected{% endif %}>{{ opt.class_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Subject</label>
+            <select name="subject_id" class="form-select" required>
+                <option value="">Select Subject</option>
+                {% for opt in options %}
+                    {% if opt.class_id|stringformat:'s' == selected_class_id|stringformat:'s' or options|length == 1 %}
+                        <option value="{{ opt.subject_id }}" {% if opt.subject_id|stringformat:'s' == selected_subject_id|stringformat:'s' %}selected{% endif %}>{{ opt.subject_name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    {% elif school_class and subject %}
+    <div class="mb-3">
+        <span class="badge bg-primary">Class: {{ school_class.name }}</span>
+        <span class="badge bg-info ms-2">Subject: {{ subject.name }}</span>
+        <input type="hidden" name="class_id" value="{{ school_class.id }}">
+        <input type="hidden" name="subject_id" value="{{ subject.id }}">
+    </div>
+    {% endif %}
+    <div class="mb-3">
+        <label class="form-label">Question Text</label>
+        <textarea name="text" class="form-control" required></textarea>
+    </div>
+    <div class="mb-3 row">
+        <div class="col-md-3">
+            <label class="form-label">Option A</label>
+            <input type="text" name="option_a" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Option B</label>
+            <input type="text" name="option_b" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Option C</label>
+            <input type="text" name="option_c" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Option D</label>
+            <input type="text" name="option_d" class="form-control" required>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Correct Option</label>
+        <select name="correct_option" class="form-select" required>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success">Add Question</button>
+    {% if school_class and subject %}
+    <a href="{% url 'teacher_review_cbt_questions' school_class.id subject.id %}" class="btn btn-secondary ms-2">Cancel</a>
+    {% endif %}
+</form>
+{% endblock %}

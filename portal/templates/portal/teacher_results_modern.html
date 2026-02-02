@@ -1,0 +1,285 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Enter Student Results - SMRPS{% endblock %}
+
+{% block sidebar %}
+    <div class="nav-section">
+        <div class="nav-title"><i class="fas fa-bars"></i> Main Menu</div>
+        <a href="{% url 'portal:teacher_dashboard' %}">
+            <i class="fas fa-home"></i> Dashboard
+        </a>
+        <a href="{% url 'portal:teacher_result_entry' %}" class="active">
+            <i class="fas fa-edit"></i> Enter Results
+        </a>
+    </div>
+
+    <div class="nav-section">
+        <div class="nav-title"><i class="fas fa-info-circle"></i> Help</div>
+        <a href="#">
+            <i class="fas fa-question-circle"></i> How to Enter Results
+        </a>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Title -->
+<div class="page-title">
+    <i class="fas fa-edit"></i>
+    <div>
+        <h1>Enter Student Results</h1>
+        <p class="text-muted mb-0">Add or update student scores for selected class and subject</p>
+    </div>
+</div>
+
+<!-- Selection Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-filter"></i> Filter by Class & Subject
+            </div>
+            <div class="card-body">
+                <form method="post" id="filterForm" class="row g-3">
+                    {% csrf_token %}
+                    
+                    <div class="col-md-3">
+                        <label for="classSelect" class="form-label"><strong>School Class</strong></label>
+                        <select name="school_class" id="classSelect" class="form-control" onchange="loadSubjects()">
+                            <option value="">-- Select Class --</option>
+                            {% for cls in classes %}
+                                <option value="{{ cls.id }}">{{ cls.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="subjectSelect" class="form-label"><strong>Subject</strong></label>
+                        <select name="subject" id="subjectSelect" class="form-control" onchange="loadStudents()">
+                            <option value="">-- Select Subject --</option>
+                            {% for subj in subjects %}
+                                <option value="{{ subj.id }}">{{ subj.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="sessionSelect" class="form-label"><strong>Academic Session</strong></label>
+                        <select name="session" id="sessionSelect" class="form-control">
+                            <option value="">-- Select Session --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="termSelect" class="form-label"><strong>Term</strong></label>
+                        <select name="term" id="termSelect" class="form-control">
+                            <option value="">-- Select Term --</option>
+                            <option value="First">First Term</option>
+                            <option value="Second">Second Term</option>
+                            <option value="Third">Third Term</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Entry Section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div><i class="fas fa-table"></i> Student Scores</div>
+                <div>
+                    <button class="btn btn-sm btn-success" id="saveButton" onclick="saveResults()">
+                        <i class="fas fa-save"></i> Save Results
+                    </button>
+                    <button class="btn btn-sm btn-warning" id="computeButton" onclick="computeResults()" style="display:none;">
+                        <i class="fas fa-calculator"></i> Compute & Auto-Fill
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="studentTableContainer" class="table-responsive">
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                        <p>Select class, subject, session, and term to load students</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Legend -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-book"></i> Grading Scale
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">A</div>
+                            <div class="grade-range">80 - 100</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">B</div>
+                            <div class="grade-range">70 - 79</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">C</div>
+                            <div class="grade-range">60 - 69</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">D</div>
+                            <div class="grade-range">50 - 59</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">E</div>
+                            <div class="grade-range">40 - 49</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">F</div>
+                            <div class="grade-range">0 - 39</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .grade-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+    }
+
+    .grade-letter {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .grade-range {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .score-input {
+        font-weight: 600;
+        text-align: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0.5rem;
+    }
+
+    .score-input:focus {
+        border-color: var(--primary-color);
+        background: #f0f9ff;
+    }
+
+    .total-display {
+        font-weight: 700;
+        background: #f1f5f9;
+        padding: 0.5rem;
+        border-radius: 6px;
+        text-align: center;
+    }
+
+    .grade-display {
+        font-weight: 700;
+        font-size: 1.2rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        text-align: center;
+        color: white;
+    }
+
+    .grade-a { background: #10b981; }
+    .grade-b { background: #3b82f6; }
+    .grade-c { background: #f59e0b; }
+    .grade-d { background: #ef4444; }
+    .grade-e { background: #ec4899; }
+    .grade-f { background: #6b7280; }
+</style>
+
+<script>
+    // Load subjects based on selected class
+    function loadSubjects() {
+        const classId = document.getElementById('classSelect').value;
+        // TODO: Implement AJAX to load subjects for selected class
+        console.log('Loading subjects for class:', classId);
+    }
+
+    // Load students when class, subject, term, and session are selected
+    function loadStudents() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectId = document.getElementById('subjectSelect').value;
+        const session = document.getElementById('sessionSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        if (!classId || !subjectId || !session || !term) {
+            alert('Please select class, subject, session, and term');
+            return;
+        }
+
+        // TODO: Implement AJAX to load students and create table
+        console.log('Loading students for class:', classId, 'subject:', subjectId);
+    }
+
+    // Calculate totals and grades
+    function calculateTotal(rowId) {
+        const test1 = parseInt(document.getElementById(`test1_${rowId}`).value) || 0;
+        const test2 = parseInt(document.getElementById(`test2_${rowId}`).value) || 0;
+        const exam = parseInt(document.getElementById(`exam_${rowId}`).value) || 0;
+
+        const total = test1 + test2 + exam;
+        const grade = getGrade(total);
+
+        document.getElementById(`total_${rowId}`).textContent = total;
+        document.getElementById(`grade_${rowId}`).textContent = grade;
+        document.getElementById(`grade_${rowId}`).className = `grade-display grade-${grade.toLowerCase()}`;
+    }
+
+    // Get grade based on total
+    function getGrade(total) {
+        if (total >= 80) return 'A';
+        if (total >= 70) return 'B';
+        if (total >= 60) return 'C';
+        if (total >= 50) return 'D';
+        if (total >= 40) return 'E';
+        return 'F';
+    }
+
+    // Save results via AJAX
+    function saveResults() {
+        // TODO: Implement AJAX POST to save all results
+        alert('Save results functionality to be implemented');
+    }
+
+    // Compute term results
+    function computeResults() {
+        // TODO: Implement API call to compute term results
+        alert('Compute results functionality to be implemented');
+    }
+</script>
+
+{% endblock %}

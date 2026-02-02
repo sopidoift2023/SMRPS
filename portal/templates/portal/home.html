@@ -1,0 +1,335 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HaDerech Software Solution | Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #0f172a;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --text-white: #ffffff;
+            --text-gray: rgba(255, 255, 255, 0.7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-blue);
+            color: var(--text-white);
+            overflow-x: hidden;
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+
+        .splash-logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .splash-name {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            animation: loading 2.5s forwards ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes loading {
+            0% {
+                width: 0%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        /* Main Content */
+        #main-content {
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent),
+                radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.1), transparent);
+        }
+
+        nav {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .nav-logo img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .login-link {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-gray);
+            max-width: 700px;
+            margin-bottom: 3rem;
+            line-height: 1.6;
+        }
+
+        .cta-btn {
+            padding: 1.25rem 2.5rem;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.5);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2.5rem;
+            border-radius: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .feature-desc {
+            color: var(--text-gray);
+            line-height: 1.6;
+        }
+
+        footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .splash-name {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="splash-screen">
+        <img src="{% static 'portal/logo1.png' %}" alt="Logo" class="splash-logo">
+        <h1 class="splash-name">HaDerech Software Solution</h1>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <nav>
+            <a href="/" class="nav-logo">
+                <img src="{% static 'portal/logo1.png' %}" alt="Logo">
+                <span>HaDerech</span>
+            </a>
+            <a href="{% url 'login' %}" class="login-link">Login to Portal</a>
+        </nav>
+
+        <section class="hero">
+            <h1 class="hero-title">HaDerech Software Solution</h1>
+            <p class="hero-subtitle">
+                Revolutionizing school management with state-of-the-art result processing and administrative automation.
+                Experience a seamless workflow designed for modern educational institutions.
+            </p>
+            <a href="{% url 'login' %}" class="cta-btn">Get Started Now <i class="fas fa-arrow-right"
+                    style="margin-left: 10px;"></i></a>
+        </section>
+
+        <section class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                <h3 class="feature-title">Fast Result Processing</h3>
+                <p class="feature-desc">Automated grade computation and position ranking across multiple terms with 100%
+                    accuracy.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
+                <h3 class="feature-title">Secure Data Storage</h3>
+                <p class="feature-desc">Your institutional data is protected with enterprise-grade security and
+                    role-based access control.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <h3 class="feature-title">AI Powered Insights</h3>
+                <p class="feature-desc">Leverage integrated AI for automated student assessment comments and performance
+                    analytics.</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 HaDerech Software Solution. Improving Education through Innovation.</p>
+        </footer>
+    </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                const content = document.getElementById('main-content');
+
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.visibility = 'hidden';
+                    content.style.opacity = '1';
+                }, 800);
+            }, 2500); // 2.5 seconds splash
+        });
+    </script>
+</body>
+
+</html>

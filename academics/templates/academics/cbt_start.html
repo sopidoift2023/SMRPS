@@ -1,0 +1,88 @@
+{% extends 'portal/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="cbt-dashboard" style="max-width: 700px; margin: 0 auto;" role="main" aria-label="CBT Exam Dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">CBT Exam: {{ session.subject.name }}</h2>
+        <div id="cbt-timer" class="badge bg-primary fs-5 px-3 py-2"><i class="fas fa-clock me-1"></i> <span id="timer">{{ duration }}:00</span></div>
+    </div>
+    <a href="#main-content" class="visually-hidden-focusable skip-link">Skip to main content</a>
+    <form method="post" autocomplete="off" aria-labelledby="cbtExamTitle" tabindex="0">
+        {% csrf_token %}
+        {% for question in questions %}
+        <div class="cbt-question card mb-4 p-3 shadow-sm" role="group" aria-labelledby="question{{ forloop.counter }}">
+            <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-secondary me-2" id="question{{ forloop.counter }}">Q{{ forloop.counter }}</span>
+                <b>{{ question.text }}</b>
+            </div>
+            <div class="ms-4">
+                <label class="d-block mb-1" for="q{{ question.id }}A"><input id="q{{ question.id }}A" type="radio" name="question_{{ question.id }}" value="A" aria-describedby="question{{ forloop.counter }}"> {{ question.option_a }}</label>
+                <label class="d-block mb-1" for="q{{ question.id }}B"><input id="q{{ question.id }}B" type="radio" name="question_{{ question.id }}" value="B" aria-describedby="question{{ forloop.counter }}"> {{ question.option_b }}</label>
+                <label class="d-block mb-1" for="q{{ question.id }}C"><input id="q{{ question.id }}C" type="radio" name="question_{{ question.id }}" value="C" aria-describedby="question{{ forloop.counter }}"> {{ question.option_c }}</label>
+                <label class="d-block mb-1" for="q{{ question.id }}D"><input id="q{{ question.id }}D" type="radio" name="question_{{ question.id }}" value="D" aria-describedby="question{{ forloop.counter }}"> {{ question.option_d }}</label>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-warning">No questions have been published for this exam yet.</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-success w-100 py-2 fs-5" aria-label="Submit Answers" style="background-color: #198754; color: #fff;">Submit Answers</button>
+    </form>
+</div>
+
+<script>
+// Timer uses teacher-set duration (in minutes)
+let totalSeconds = parseInt('{{ duration|default:30 }}', 10) * 60;
+function updateTimer() {
+    const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const sec = String(totalSeconds % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${min}:${sec}`;
+    if (totalSeconds > 0) {
+        totalSeconds--;
+        setTimeout(updateTimer, 1000);
+    } else {
+        autoSubmitCBT();
+    }
+}
+updateTimer();
+
+// --- Auto-submit if student leaves tab/window for >10s ---
+let blurTimeout = null;
+let hasSubmitted = false;
+function autoSubmitCBT() {
+    if (!hasSubmitted) {
+        hasSubmitted = true;
+        document.querySelector('form').submit();
+    }
+}
+
+function handleBlur() {
+    // Start 10s countdown on blur/hidden
+    if (!blurTimeout) {
+        blurTimeout = setTimeout(() => {
+            autoSubmitCBT();
+        }, 10000); // 10 seconds
+    }
+}
+function handleFocus() {
+    // Cancel auto-submit if student returns in time
+    if (blurTimeout) {
+        clearTimeout(blurTimeout);
+        blurTimeout = null;
+    }
+}
+
+window.addEventListener('blur', handleBlur);
+window.addEventListener('focus', handleFocus);
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        handleBlur();
+    } else {
+        handleFocus();
+    }
+});
+window.addEventListener('beforeunload', function(e) {
+    autoSubmitCBT();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'portal/base.html' %}
+{% block content %}
+<h2>Review & Publish CBT Questions for {{ school_class.name }} - {{ subject.name }}</h2>
+<div class="mb-3 d-flex justify-content-end gap-2">
+    <a href="{% url 'teacher_generate_cbt_questions' school_class.id subject.id %}" class="btn btn-outline-primary">
+        <i class="fas fa-magic"></i> Generate with AI
+    </a>
+    <a href="{% url 'teacher_add_cbt_question' %}?class_id={{ school_class.id }}&subject_id={{ subject.id }}" class="btn btn-outline-success">
+        <i class="fas fa-plus"></i> Add Question Manually
+    </a>
+</div>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="cbt_type" class="form-label"><b>CBT Type:</b></label>
+        <select name="cbt_type" id="cbt_type" class="form-select" style="max-width: 300px;" required>
+            <option value="practice" {% if exam.cbt_type == 'practice' %}selected{% endif %}>Practice</option>
+            <option value="first_test" {% if exam.cbt_type == 'first_test' %}selected{% endif %}>1st Test</option>
+            <option value="second_test" {% if exam.cbt_type == 'second_test' %}selected{% endif %}>2nd Test</option>
+            <option value="exam" {% if exam.cbt_type == 'exam' %}selected{% endif %}>Exam</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="duration" class="form-label"><b>Exam Duration (minutes):</b></label>
+        <input type="number" min="1" max="240" name="duration" id="duration" class="form-control" value="{{ exam.duration|default:30 }}" required style="max-width: 200px;">
+    </div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Publish?</th>
+                <th>Question</th>
+                <th>Options</th>
+                <th>Correct</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for q in questions %}
+            <tr>
+                <td><input type="checkbox" name="publish" value="{{ q.id }}" {% if q.is_published %}checked{% endif %}></td>
+                <td>{{ q.text }}</td>
+                <td>
+                    A. {{ q.option_a }}<br>
+                    B. {{ q.option_b }}<br>
+                    C. {{ q.option_c }}<br>
+                    D. {{ q.option_d }}
+                </td>
+                <td>{{ q.correct_option }}</td>
+                <td>
+                    <a href="{% url 'teacher_edit_cbt_question' q.id %}" class="btn btn-sm btn-primary">Edit</a>
+                    <a href="{% url 'teacher_delete_cbt_question' q.id %}" class="btn btn-sm btn-danger ms-1">Delete</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">No questions found. Generate with AI or add manually.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <button type="submit" name="publish_exam" class="btn btn-success">Publish Exam & Duration</button>
+    {% if exam.is_published %}
+        <button type="submit" name="depublish_exam" class="btn btn-warning ms-2">Depublish/Lock Exam</button>
+    {% endif %}
+    <label class="ms-3"><input type="checkbox" name="unpublish_others"> Unpublish others</label>
+</form>
+{% endblock %}

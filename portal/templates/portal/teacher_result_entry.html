@@ -1,0 +1,578 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Enter Student Results - SMRPS{% endblock %}
+
+{% block sidebar %}
+<div class="nav-section">
+    <div class="nav-title"><i class="fas fa-bars"></i> Main Menu</div>
+    <a href="{% url 'portal:teacher_dashboard' %}">
+        <i class="fas fa-home"></i> Dashboard
+    </a>
+    <a href="{% url 'portal:teacher_result_entry' %}" class="active">
+        <i class="fas fa-edit"></i> Enter Results
+    </a>
+</div>
+
+<div class="nav-section">
+    <div class="nav-title"><i class="fas fa-cog"></i> Settings</div>
+    <a href="{% url 'portal:change_password' %}">
+        <i class="fas fa-key"></i> Change Password
+    </a>
+    <form action="{% url 'logout' %}" method="post" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit"
+            style="display: flex; align-items: center; gap: 1rem; color: #cbd5e1; text-decoration: none; padding: 0.75rem 1.5rem; background: transparent; border: none; width: 100%; cursor: pointer; transition: all 0.3s; border-left: 3px solid transparent; font-size: inherit; font-family: inherit;">
+            <i class="fas fa-sign-out-alt" style="width: 20px; text-align: center;"></i> Logout
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Ensure form controls are always interactive */
+    #classSelect,
+    #subjectSelect,
+    #sessionSelect,
+    #termSelect {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        background-color: #ffffff !important;
+        color: #000 !important;
+        padding: 0.6rem 1rem !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        appearance: auto !important;
+        -webkit-appearance: auto !important;
+        -moz-appearance: auto !important;
+    }
+
+    #classSelect:focus,
+    #subjectSelect:focus,
+    #sessionSelect:focus,
+    #termSelect:focus {
+        outline: none;
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25) !important;
+    }
+</style>
+
+<!-- Page Title -->
+<div class="page-title">
+    <i class="fas fa-edit"></i>
+    <div>
+        <h1>Enter Student Results</h1>
+        <p class="text-muted mb-0">Add or update student scores - all changes are auto-saved</p>
+    </div>
+</div>
+
+<!-- Selection Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-filter"></i> Select Class, Subject, Session & Term
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="classSelect" class="form-label"><strong>School Class</strong></label>
+                        <select id="classSelect" class="form-control" onchange="loadSubjects()">
+                            <option value="">-- Select Class --</option>
+                            {% for cls in classes %}
+                            <option value="{{ cls.id }}">{{ cls.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="subjectSelect" class="form-label"><strong>Subject</strong></label>
+                        <select id="subjectSelect" class="form-control" onchange="loadStudents()">
+                            <option value="">-- Select Subject --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="sessionSelect" class="form-label"><strong>Academic Session</strong></label>
+                        <select id="sessionSelect" class="form-control" onchange="loadStudents()">
+                            <option value="">-- Select Session --</option>
+                            {% for session in sessions %}
+                            <option value="{{ session.id }}">{{ session.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="termSelect" class="form-label"><strong>Term</strong></label>
+                        <select id="termSelect" class="form-control" onchange="loadStudents()">
+                            <option value="">-- Select Term --</option>
+                            <option value="First">First Term</option>
+                            <option value="Second">Second Term</option>
+                            <option value="Third">Third Term</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Entry Section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div><i class="fas fa-table"></i> Student Scores</div>
+                <div>
+                    <button class="btn btn-sm btn-warning" id="computeButton" onclick="computeResults()"
+                        style="display:none;">
+                        <i class="fas fa-calculator"></i> Compute Results & Positions
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="studentTableContainer" class="table-responsive">
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                        <p>Select class, subject, session, and term above to load students</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Legend -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-book"></i> Grading Scale
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">A</div>
+                            <div class="grade-range">80 - 100</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">B</div>
+                            <div class="grade-range">70 - 79</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">C</div>
+                            <div class="grade-range">60 - 69</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">D</div>
+                            <div class="grade-range">50 - 59</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">E</div>
+                            <div class="grade-range">40 - 49</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="grade-item">
+                            <div class="grade-letter">F</div>
+                            <div class="grade-range">0 - 39</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .grade-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+    }
+
+    .grade-letter {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .grade-range {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .score-input {
+        font-weight: 600;
+        text-align: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0.5rem;
+        width: 80px !important;
+        max-width: 100%;
+        background-color: #ffffff !important;
+        cursor: text;
+        appearance: textfield;
+    }
+
+    .score-input:focus {
+        border-color: var(--primary-color) !important;
+        background: #f0f9ff !important;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .score-input::-webkit-outer-spin-button,
+    .score-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .total-display,
+    .grade-display {
+        font-weight: 700;
+        padding: 0.5rem;
+        border-radius: 6px;
+        text-align: center;
+    }
+
+    .total-display {
+        background: #f1f5f9;
+        min-width: 60px;
+    }
+
+    .grade-display {
+        font-size: 1.2rem;
+        color: white;
+        min-width: 50px;
+    }
+
+    .grade-a {
+        background: #10b981;
+    }
+
+    .grade-b {
+        background: #3b82f6;
+    }
+
+    .grade-c {
+        background: #f59e0b;
+    }
+
+    .grade-d {
+        background: #ef4444;
+    }
+
+    .grade-e {
+        background: #ec4899;
+    }
+
+    .grade-f {
+        background: #6b7280;
+    }
+
+    .row-modified {
+        background: #fef3c7 !important;
+    }
+</style>
+
+<script>
+    let currentFilters = {};
+    let studentsData = [];
+    let modifiedResults = new Set();
+
+    // Initialize select event listeners on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM loaded - initializing select listeners');
+
+        document.getElementById('classSelect').addEventListener('change', function (e) {
+            console.log('Class changed to:', this.value);
+            loadSubjects();
+        });
+
+        document.getElementById('subjectSelect').addEventListener('change', function (e) {
+            console.log('Subject changed to:', this.value);
+            loadStudents();
+        });
+
+        document.getElementById('sessionSelect').addEventListener('change', function (e) {
+            console.log('Session changed to:', this.value);
+            loadStudents();
+        });
+
+        document.getElementById('termSelect').addEventListener('change', function (e) {
+            console.log('Term changed to:', this.value);
+            loadStudents();
+        });
+    });
+
+    function loadSubjects() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectSelect = document.getElementById('subjectSelect');
+
+        console.log('loadSubjects called with classId:', classId);
+
+        if (!classId) {
+            subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>';
+            return;
+        }
+
+        const url = `/portal/api/class-subjects/?class_id=${classId}`;
+        console.log('Fetching from:', url);
+
+        fetch(url)
+            .then(r => {
+                console.log('Subjects response status:', r.status);
+                return r.json();
+            })
+            .then(subjects => {
+                console.log('Subjects data received:', subjects);
+                subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>';
+                if (Array.isArray(subjects)) {
+                    subjects.forEach(s => {
+                        console.log('Adding subject:', s);
+                        subjectSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                    });
+                }
+            })
+            .catch(e => {
+                console.error('Error loading subjects:', e);
+                showAlert('Error loading subjects: ' + e.message, 'danger');
+            });
+    }
+
+    function loadStudents() {
+        const classId = document.getElementById('classSelect').value;
+        const subjectId = document.getElementById('subjectSelect').value;
+        const sessionId = document.getElementById('sessionSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        console.log('Load students called with:', { classId, subjectId, sessionId, term });
+
+        if (!classId || !subjectId || !sessionId || !term) {
+            document.getElementById('studentTableContainer').innerHTML = '<div class="p-4 text-center text-muted"><i class="fas fa-info-circle" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i><p>Select all filters to load students</p></div>';
+            document.getElementById('computeButton').style.display = 'none';
+            return;
+        }
+
+        currentFilters = { classId, subjectId, sessionId, term };
+        modifiedResults.clear();
+
+        document.getElementById('studentTableContainer').innerHTML = '<div class="p-4 text-center"><div class="spinner-border"></div><p class="mt-2">Loading...</p></div>';
+
+        const url = `/portal/api/students-results/?class_id=${classId}&subject_id=${subjectId}&session_id=${sessionId}&term=${term}`;
+        console.log('Fetching from:', url);
+
+        fetch(url)
+            .then(r => {
+                console.log('Students response status:', r.status);
+                return r.json();
+            })
+            .then(data => {
+                console.log('Students data received:', data);
+
+                if (!data.success) {
+                    showAlert('Error: ' + (data.error || 'Failed to load students'), 'danger');
+                    document.getElementById('studentTableContainer').innerHTML = '<div class="p-4 text-center text-danger"><p>' + (data.error || 'Error loading students') + '</p></div>';
+                    return;
+                }
+
+                studentsData = data.students;
+                console.log('Students count:', studentsData.length);
+
+                if (studentsData.length === 0) {
+                    document.getElementById('studentTableContainer').innerHTML = '<div class="p-4 text-center text-muted"><p>No students in this class</p></div>';
+                    return;
+                }
+
+                let html = '<table class="table table-hover mb-0"><thead><tr><th>Admission #</th><th>Name</th><th style="text-align:center;">Test 1</th><th style="text-align:center;">Test 2</th><th style="text-align:center;">Exam</th><th style="text-align:center;">Total</th><th style="text-align:center;">Grade</th><th style="text-align:center;">Status</th></tr></thead><tbody>';
+
+                studentsData.forEach(s => {
+                    const gradeInfo = calculateGrade(s.total);
+                    html += `
+                        <tr id="row_${s.student_id}">
+                            <td><small>${s.admission_number}</small></td>
+                            <td>${s.student_name}</td>
+                            <td style="text-align:center;"><input type="number" class="score-input" id="test1_${s.student_id}" value="${s.test1}" min="0" max="20" onchange="updateScore(${s.student_id}, 'test1', this.value)" oninput="console.log('Input changed:', this.value)"></td>
+                            <td style="text-align:center;"><input type="number" class="score-input" id="test2_${s.student_id}" value="${s.test2}" min="0" max="20" onchange="updateScore(${s.student_id}, 'test2', this.value)" oninput="console.log('Input changed:', this.value)"></td>
+                            <td style="text-align:center;"><input type="number" class="score-input" id="exam_${s.student_id}" value="${s.exam}" min="0" max="60" onchange="updateScore(${s.student_id}, 'exam', this.value)" oninput="console.log('Input changed:', this.value)"></td>
+                            <td style="text-align:center;"><div class="total-display" id="total_${s.student_id}">${s.total}</div></td>
+                            <td style="text-align:center;"><div class="grade-display ${gradeInfo.class}" id="grade_${s.student_id}">${gradeInfo.label}</div></td>
+                            <td style="text-align:center;"><span class="badge bg-secondary" id="status_${s.student_id}">Ready</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                document.getElementById('studentTableContainer').innerHTML = html;
+                document.getElementById('computeButton').style.display = 'inline-block';
+                console.log('Table rendered successfully');
+            })
+            .catch(e => {
+                console.error('Error loading students:', e);
+                showAlert('Error loading students: ' + e.message, 'danger');
+                document.getElementById('studentTableContainer').innerHTML = '<div class="p-4 text-center text-danger"><p>Error loading students: ' + e.message + '</p></div>';
+            });
+    }
+
+    function calculateGrade(total) {
+        if (total === '-' || total === null) return { label: '-', class: 'grade-f' };
+        if (total >= 80) return { label: 'A', class: 'grade-a' };
+        if (total >= 70) return { label: 'B', class: 'grade-b' };
+        if (total >= 60) return { label: 'C', class: 'grade-c' };
+        if (total >= 50) return { label: 'D', class: 'grade-d' };
+        if (total >= 40) return { label: 'E', class: 'grade-e' };
+        return { label: 'F', class: 'grade-f' };
+    }
+
+    function updateScore(studentId, field, value) {
+        console.log(`updateScore called: studentId=${studentId}, field=${field}, value=${value}`);
+
+        const val = parseFloat(value) || 0;
+        const student = studentsData.find(s => s.student_id === studentId);
+        if (!student) {
+            console.error('Student not found:', studentId);
+            return;
+        }
+
+        if ((field === 'test1' || field === 'test2') && (val < 0 || val > 20)) {
+            showAlert(`${field} must be 0-20`, 'warning');
+            return;
+        }
+        if (field === 'exam' && (val < 0 || val > 60)) {
+            showAlert('Exam must be 0-60', 'warning');
+            return;
+        }
+
+        student[field] = val;
+        const total = student.test1 + student.test2 + student.exam;
+        const gradeInfo = calculateGrade(total);
+
+        console.log(`Updated: total=${total}, grade=${gradeInfo.label}`);
+
+        document.getElementById(`total_${studentId}`).textContent = total;
+        const gradeEl = document.getElementById(`grade_${studentId}`);
+        gradeEl.textContent = gradeInfo.label;
+        gradeEl.className = `grade-display ${gradeInfo.class}`;
+
+        document.getElementById(`row_${studentId}`).classList.add('row-modified');
+        document.getElementById(`status_${studentId}`).innerHTML = '<span class="badge bg-warning">Saving...</span>';
+
+        modifiedResults.add(studentId);
+
+        // Auto-save
+        clearTimeout(window.autoSaveTimeout);
+        window.autoSaveTimeout = setTimeout(() => {
+            fetch('/portal/api/save-result/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    student_id: studentId,
+                    class_id: currentFilters.classId,
+                    subject_id: currentFilters.subjectId,
+                    session_id: currentFilters.sessionId,
+                    term: currentFilters.term,
+                    test1: student.test1,
+                    test2: student.test2,
+                    exam: student.exam
+                })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById(`status_${studentId}`).innerHTML = '<span class="badge bg-success">✓ Saved</span>';
+                        document.getElementById(`row_${studentId}`).classList.remove('row-modified');
+                        modifiedResults.delete(studentId);
+                    } else {
+                        showAlert(`Error: ${data.error}`, 'danger');
+                        document.getElementById(`status_${studentId}`).innerHTML = '<span class="badge bg-danger">Error</span>';
+                    }
+                })
+                .catch(e => {
+                    document.getElementById(`status_${studentId}`).innerHTML = '<span class="badge bg-danger">Error</span>';
+                });
+        }, 1000);
+    }
+
+    function computeResults() {
+        if (!confirm('Compute term results (averages & class positions) for all students?')) return;
+
+        document.getElementById('computeButton').disabled = true;
+        document.getElementById('computeButton').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Computing...';
+
+        fetch('/portal/api/compute-results/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                class_id: currentFilters.classId,
+                session_id: currentFilters.sessionId,
+                term: currentFilters.term
+            })
+        })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('computeButton').disabled = false;
+                document.getElementById('computeButton').innerHTML = '<i class="fas fa-calculator"></i> Compute Results & Positions';
+
+                if (data.success) {
+                    showAlert(`Computed! ${data.count} students ranked by average.`, 'success');
+                    showComputedSummary(data.summaries);
+                } else {
+                    showAlert(`Error: ${data.error}`, 'danger');
+                }
+            })
+            .catch(e => {
+                document.getElementById('computeButton').disabled = false;
+                document.getElementById('computeButton').innerHTML = '<i class="fas fa-calculator"></i> Compute Results & Positions';
+                showAlert('Error computing results', 'danger');
+            });
+    }
+
+    function showComputedSummary(summaries) {
+        let html = '<table class="table table-sm"><thead><tr><th>Pos</th><th>Student</th><th>Admission</th><th>Total</th><th>Average</th></tr></thead><tbody>';
+        summaries.forEach(s => {
+            html += `<tr><td><strong>${s.position}</strong></td><td>${s.student}</td><td>${s.admission}</td><td>${s.total}</td><td>${s.average}</td></tr>`;
+        });
+        html += '</tbody></table>';
+
+        showAlert(`<strong>✓ Results Computed!</strong><br>${html}`, 'success');
+    }
+
+    function getCookie(name) {
+        let val = null;
+        if (document.cookie) {
+            document.cookie.split(';').forEach(c => {
+                c = c.trim();
+                if (c.substring(0, name.length + 1) === name + '=') {
+                    val = decodeURIComponent(c.substring(name.length + 1));
+                }
+            });
+        }
+        return val;
+    }
+
+    function showAlert(msg, type = 'info') {
+        const el = document.createElement('div');
+        el.className = `alert alert-${type} alert-dismissible fade show`;
+        el.innerHTML = msg + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+        document.querySelector('.main-content').insertBefore(el, document.querySelector('.page-title'));
+        setTimeout(() => el.remove(), 5000);
+    }
+</script>
+
+{% endblock %}

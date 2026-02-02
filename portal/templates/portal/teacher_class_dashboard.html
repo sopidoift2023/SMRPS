@@ -1,0 +1,836 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block title %}{{ school_class.name }} - Teacher Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="mb-1"><i class="fas fa-chalkboard"></i> {{ school_class.name }} - Class Management</h2>
+            <p class="text-muted">Manage students, enter scores, and generate results</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'portal:teacher_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div id="alertContainer"></div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#studentsTab"
+                type="button" role="tab">
+                <i class="fas fa-users"></i> Students ({{ students.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="scores-tab" data-bs-toggle="tab" data-bs-target="#scoresTab" type="button"
+                role="tab">
+                <i class="fas fa-edit"></i> Enter Scores
+            </button>
+        </li>
+        {% if is_form_teacher %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#resultsTab" type="button"
+                role="tab">
+                <i class="fas fa-chart-bar"></i> Publish Final Results
+            </button>
+        </li>
+        <!-- Assessments Grid tab removed as requested -->
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{% url 'portal:teacher_result_report_sheet' school_class.id %}"
+                title="Per-student assessment workflow">
+                <i class="fas fa-user-edit"></i> Result Report Sheet
+            </a>
+        </li>
+        {% else %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link disabled" title="Only form teacher can publish results">
+                <i class="fas fa-chart-bar"></i> Results (Form Teacher Only)
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- STUDENTS TAB -->
+        <div class="tab-pane fade show active" id="studentsTab" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus"></i> Add New Student to Class</h5>
+                </div>
+                <div class="card-body">
+                    <form id="addStudentForm" class="row g-3">
+                        {% csrf_token %}
+                        <div class="col-md-2">
+                            <label for="id_first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="id_first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="id_middle_name" class="form-label">Middle Name</label>
+                            <input type="text" class="form-control" id="id_middle_name" name="middle_name">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="id_last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="id_last_name" name="last_name" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="id_admission_number" class="form-label">Admission # *</label>
+                            <input type="text" class="form-control" id="id_admission_number" name="admission_number"
+                                required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="id_gender" class="form-label">Gender *</label>
+                            <select class="form-select" id="id_gender" name="gender" required>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="id_date_of_birth" class="form-label">DOB</label>
+                            <input type="date" class="form-control" id="id_date_of_birth" name="date_of_birth">
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Add Student
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Students List -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Students in {{ school_class.name }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Admission #</th>
+                                    <th>Gender</th>
+                                    <th>Age</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsList">
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ student.last_name }} {{ student.first_name }}</td>
+                                    <td><code>{{ student.admission_number }}</code></td>
+                                    <td>{{ student.get_gender_display }}</td>
+                                    <td>{{ student.age|default:"N/A" }}</td>
+                                    <td>
+                                        {% if student.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                            data-bs-target="#editStudentModal" data-student-id="{{ student.id }}"
+                                            data-first-name="{{ student.first_name }}"
+                                            data-middle-name="{{ student.middle_name|default:'' }}"
+                                            data-last-name="{{ student.last_name }}"
+                                            data-admission="{{ student.admission_number }}"
+                                            data-gender="{{ student.gender }}"
+                                            data-dob="{{ student.date_of_birth|date:'Y-m-d' }}"
+                                            onclick="prepareEditStudent(this)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                            onclick="deleteStudent({{student.id}})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No students in this class yet. Add one using the form above.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SCORES TAB -->
+        <div class="tab-pane fade" id="scoresTab" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Enter Student Scores by Subject</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="subjectSelect" class="form-label">Select Subject *</label>
+                            <select class="form-select" id="subjectSelect" required>
+                                <option value="">-- Choose Subject --</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="sessionSelect" class="form-label">Select Session *</label>
+                            <select class="form-select" id="sessionSelect" required>
+                                <option value="">-- Choose Session --</option>
+                                {% for session in sessions %}
+                                <option value="{{ session.id }}">{{ session.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="termSelect" class="form-label">Select Term *</label>
+                            <select class="form-select" id="termSelect" required>
+                                <option value="">-- Choose Term --</option>
+                                {% for term_code, term_name in terms %}
+                                <option value="{{ term_code }}">{{ term_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-primary w-100" id="loadScoresBtn"
+                                style="margin-top: 32px;">
+                                <i class="fas fa-search"></i> Load
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scores Entry Table -->
+                    <div id="scoresContainer" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Enter scores: Test 1 (0-20), Test 2 (0-20), Exam (0-60)
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Admission #</th>
+                                        <th>Test 1 (0-20)</th>
+                                        <th>Test 2 (0-20)</th>
+                                        <th>Exam (0-60)</th>
+                                        <th>Total</th>
+                                        <th>Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scoresTable">
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-success btn-lg w-100" id="saveScoresBtn">
+                            <i class="fas fa-save"></i> Save All Scores
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS TAB -->
+        <div class="tab-pane fade" id="resultsTab" role="tabpanel">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Generate & View Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="resultSessionSelect" class="form-label">Select Session *</label>
+                            <select class="form-select" id="resultSessionSelect" required>
+                                <option value="">-- Choose Session --</option>
+                                {% for session in sessions %}
+                                <option value="{{ session.id }}">{{ session.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="resultTermSelect" class="form-label">Select Term *</label>
+                            <select class="form-select" id="resultTermSelect" required>
+                                <option value="">-- Choose Term --</option>
+                                {% for term_code, term_name in terms %}
+                                <option value="{{ term_code }}">{{ term_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-success w-100" id="generateResultsBtn"
+                                style="margin-top: 32px;">
+                                <i class="fas fa-magic"></i> Generate
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-info w-100" id="downloadCumulativeZipBtn"
+                                style="margin-top: 32px;" title="Download class cumulative session ZIP">
+                                <i class="fas fa-file-archive"></i> Cumulative ZIP
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-warning w-100" id="downloadFullResultsZipBtn"
+                                style="margin-top: 32px;" title="Download all individual report cards as ZIP">
+                                <i class="fas fa-file-zipper"></i> Full Results ZIP
+                            </button>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-danger w-100" id="downloadBroadsheetBtn"
+                                style="margin-top: 32px;" title="Download class broadsheet PDF">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Results Display -->
+                    <div id="resultsContainer" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> <strong>Final Combined Results</strong> - All subjects
+                            combined with overall average and class position
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="resultsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Position</th>
+                                        <th>Student Name</th>
+                                        <th>Admission #</th>
+                                        <th id="subjectsHeader"></th>
+                                        <th>Total</th>
+                                        <th>Average</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsList">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>Edit Student</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStudentForm">
+                    <input type="hidden" id="editStudentId">
+                    <div class="mb-2"><label>First Name</label><input type="text" id="editStudentFirstName"
+                            class="form-control" required></div>
+                    <div class="mb-2"><label>Middle Name</label><input type="text" id="editStudentMiddleName"
+                            class="form-control"></div>
+                    <div class="mb-2"><label>Last Name</label><input type="text" id="editStudentLastName"
+                            class="form-control" required></div>
+                    <div class="mb-2"><label>Admission Number</label><input type="text" id="editStudentAdmission"
+                            class="form-control" required></div>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label>Gender</label>
+                            <select id="editStudentGender" class="form-select">
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label>Date of Birth</label>
+                            <input type="date" id="editStudentDOB" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-2"><label>Reset Password (Leave blank to keep current)</label>
+                        <input type="password" id="editStudentPassword" class="form-control" placeholder="New password">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Update Student</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Safely pass Django context variables to JS -->
+<script id="classId" type="application/json">{{ school_class.id }}</script>
+<script id="isFormTeacher" type="application/json">{{ is_form_teacher|yesno:"true,false" }}</script>
+<script>
+    // Download Cumulative ZIP (Form Teacher/Admin)
+    document.getElementById('downloadCumulativeZipBtn').addEventListener('click', async () => {
+        const sessionId = document.getElementById('resultSessionSelect').value;
+        if (!sessionId) {
+            showAlert('warning', 'Please select session first');
+            return;
+        }
+        try {
+            const url = `/portal/class/${classId}/download-cumulative-zip/?session_id=${sessionId}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = true;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAlert('success', 'Cumulative ZIP downloading...');
+        } catch (error) {
+            showAlert('danger', 'Error downloading ZIP: ' + error.message);
+        }
+    });
+
+    // Download Full Results ZIP (Form Teacher/Admin)
+    document.getElementById('downloadFullResultsZipBtn')?.addEventListener('click', async () => {
+        const sessionId = document.getElementById('resultSessionSelect').value;
+        const term = document.getElementById('resultTermSelect').value;
+        if (!sessionId || !term) {
+            showAlert('warning', 'Please select session and term first');
+            return;
+        }
+        try {
+            const url = `/portal/admin/${classId}/comprehensive-pdf/?session_id=${sessionId}&term=${term}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = true;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAlert('success', 'Full Results ZIP downloading...');
+        } catch (error) {
+            showAlert('danger', 'Error downloading ZIP: ' + error.message);
+        }
+    });
+    const classId = JSON.parse(document.getElementById('classId').textContent);
+    const isFormTeacher = JSON.parse(document.getElementById('isFormTeacher').textContent);
+
+    window.prepareEditStudent = function (btn) {
+        document.getElementById('editStudentId').value = btn.dataset.studentId;
+        document.getElementById('editStudentFirstName').value = btn.dataset.firstName;
+        document.getElementById('editStudentMiddleName').value = btn.dataset.middleName;
+        document.getElementById('editStudentLastName').value = btn.dataset.lastName;
+        document.getElementById('editStudentAdmission').value = btn.dataset.admission;
+        document.getElementById('editStudentGender').value = btn.dataset.gender || 'M';
+        document.getElementById('editStudentDOB').value = btn.dataset.dob || '';
+        document.getElementById('editStudentPassword').value = ''; // Always clear on open
+    };
+
+    document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('editStudentId').value;
+        const data = {
+            first_name: document.getElementById('editStudentFirstName').value,
+            middle_name: document.getElementById('editStudentMiddleName').value,
+            last_name: document.getElementById('editStudentLastName').value,
+            admission_number: document.getElementById('editStudentAdmission').value,
+            gender: document.getElementById('editStudentGender').value,
+            date_of_birth: document.getElementById('editStudentDOB').value,
+            password: document.getElementById('editStudentPassword').value
+        };
+        try {
+            const resp = await fetch(`/portal/api/students/${id}/edit/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify(data)
+            });
+            const res = await resp.json();
+            if (res.success) { location.reload(); }
+            else showAlert('danger', res.error);
+        } catch (e) { showAlert('danger', e.message); }
+    });
+
+    window.deleteStudent = async function (id) {
+        if (!confirm('Are you sure you want to delete this student and their login account?')) return;
+        try {
+            const resp = await fetch(`/portal/api/students/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+            });
+            const res = await resp.json();
+            if (res.success) { location.reload(); }
+            else showAlert('danger', res.error);
+        } catch (e) { showAlert('danger', e.message); }
+    };
+
+    // Add Student
+    document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            const response = await fetch(`/portal/teacher/${classId}/add-student/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('success', data.message);
+                e.target.reset();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('danger', data.message || 'Error adding student');
+            }
+        } catch (error) {
+            showAlert('danger', 'Error: ' + error.message);
+        }
+    });
+
+    // Load Scores for Subject
+    document.getElementById('loadScoresBtn').addEventListener('click', async () => {
+        const subjectId = document.getElementById('subjectSelect').value;
+        const sessionId = document.getElementById('sessionSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        if (!subjectId || !sessionId || !term) {
+            showAlert('warning', 'Please select all fields');
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `/portal/teacher/${classId}/enter-scores/?subject_id=${subjectId}&session_id=${sessionId}&term=${term}`
+            );
+            const text = await response.text();
+            // Production-standard: Detect if response is HTML (session expired or error page)
+            if (text.trim().startsWith('<')) {
+                showAlert('danger', 'Session expired or unauthorized. Please log in again.');
+                return;
+            }
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                showAlert('danger', 'Unexpected server response. Please contact support.');
+                return;
+            }
+            if (!data.success) {
+                showAlert('danger', data.error || 'Failed to load scores');
+                return;
+            }
+            populateScoresTable(data.students);
+            document.getElementById('scoresContainer').style.display = 'block';
+        } catch (error) {
+            showAlert('danger', 'Error loading scores: ' + error.message);
+        }
+    });
+
+    function populateScoresTable(scoresData) {
+        const tbody = document.getElementById('scoresTable');
+        tbody.innerHTML = '';
+
+        scoresData.forEach(item => {
+            const row = document.createElement('tr');
+            const total = (item.result.test1 || 0) + (item.result.test2 || 0) + (item.result.exam || 0);
+            const gradeInfo = calculateGrade(total);
+            row.innerHTML = `
+            <td>${item.student.last_name} ${item.student.first_name}</td>
+            <td><code>${item.student.admission_number}</code></td>
+            <td><input type="number" class="form-control score-input" min="0" max="20" value="${item.result.test1 || 0}" data-student="${item.student.id}" data-field="test1"></td>
+            <td><input type="number" class="form-control score-input" min="0" max="20" value="${item.result.test2 || 0}" data-student="${item.student.id}" data-field="test2"></td>
+            <td><input type="number" class="form-control score-input" min="0" max="60" value="${item.result.exam || 0}" data-student="${item.student.id}" data-field="exam"></td>
+            <td><span class="badge bg-info score-total">${total}</span></td>
+            <td><span class="badge ${gradeInfo.class} score-grade">${gradeInfo.label}</span></td>
+        `;
+            tbody.appendChild(row);
+        });
+
+        // Add change listeners to score inputs
+        document.querySelectorAll('.score-input').forEach(input => {
+            input.addEventListener('change', updateRowTotal);
+        });
+    }
+
+    function updateRowTotal(e) {
+        const row = e.target.closest('tr');
+        const test1 = parseInt(row.querySelector('[data-field="test1"]').value) || 0;
+        const test2 = parseInt(row.querySelector('[data-field="test2"]').value) || 0;
+        const exam = parseInt(row.querySelector('[data-field="exam"]').value) || 0;
+        const total = test1 + test2 + exam;
+
+        row.querySelector('.score-total').textContent = total;
+        const gradeInfo = calculateGrade(total);
+        const gradeBadge = row.querySelector('.score-grade');
+        gradeBadge.textContent = gradeInfo.label;
+        gradeBadge.className = `badge ${gradeInfo.class} score-grade`;
+    }
+
+    function calculateGrade(total) {
+        if (total >= 80) return { label: 'A', class: 'bg-success' };
+        if (total >= 70) return { label: 'B', class: 'bg-primary' };
+        if (total >= 60) return { label: 'C', class: 'bg-info' };
+        if (total >= 50) return { label: 'D', class: 'bg-warning text-dark' };
+        if (total >= 40) return { label: 'E', class: 'bg-secondary' };
+        return { label: 'F', class: 'bg-danger' };
+    }
+
+    // Save Scores
+    document.getElementById('saveScoresBtn').addEventListener('click', async () => {
+        const subjectId = document.getElementById('subjectSelect').value;
+        const sessionId = document.getElementById('sessionSelect').value;
+        const term = document.getElementById('termSelect').value;
+
+        const scores = [];
+        document.querySelectorAll('#scoresTable tr').forEach(row => {
+            const inputs = row.querySelectorAll('.score-input');
+            scores.push({
+                student_id: inputs[0].dataset.student,
+                test1: parseInt(inputs[0].value) || 0,
+                test2: parseInt(inputs[1].value) || 0,
+                exam: parseInt(inputs[2].value) || 0
+            });
+        });
+
+        try {
+            const response = await fetch(`/portal/teacher/${classId}/save-scores/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    class_id: classId,
+                    subject_id: subjectId,
+                    session_id: sessionId,
+                    term: term,
+                    scores: scores
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('success', data.message);
+            } else {
+                showAlert('danger', data.error || 'Error saving scores');
+            }
+        } catch (error) {
+            showAlert('danger', 'Error: ' + error.message);
+        }
+    });
+
+    // Generate Results
+    document.getElementById('generateResultsBtn').addEventListener('click', async () => {
+        const sessionId = document.getElementById('resultSessionSelect').value;
+        const term = document.getElementById('resultTermSelect').value;
+
+        if (!sessionId || !term) {
+            showAlert('warning', 'Please select session and term');
+            return;
+        }
+
+        const endpoint = isFormTeacher ? `/portal/teacher/${classId}/final-results/` : `/portal/teacher/${classId}/compute-results/`;
+        const body = isFormTeacher ? {
+            session_id: sessionId,
+            term: term
+        } : {
+            class_id: classId,
+            session_id: sessionId,
+            term: term
+        };
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('success', data.message);
+                if (isFormTeacher) {
+                    populateFinalResultsTable(data.subjects, data.results);
+                } else {
+                    populateResultsTable(data.summaries);
+                }
+                document.getElementById('resultsContainer').style.display = 'block';
+            } else {
+                showAlert('danger', data.error || 'Error generating results');
+            }
+        } catch (error) {
+            showAlert('danger', 'Error: ' + error.message);
+        }
+    });
+
+    // Download Broadsheet PDF (Form Teacher Only)
+    document.getElementById('downloadBroadsheetBtn').addEventListener('click', async () => {
+        const sessionId = document.getElementById('resultSessionSelect').value;
+        const term = document.getElementById('resultTermSelect').value;
+
+        if (!sessionId || !term) {
+            showAlert('warning', 'Please select session and term first');
+            return;
+        }
+
+        try {
+            // Construct download URL
+            const url = `/portal/teacher/${classId}/broadsheet-pdf/?session_id=${sessionId}&term=${term}`;
+
+            // Open in new tab or trigger download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = true;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showAlert('success', 'Broadsheet PDF downloading...');
+        } catch (error) {
+            showAlert('danger', 'Error downloading PDF: ' + error.message);
+        }
+    });
+
+    // Populate Final Combined Results (Form Teacher)
+    function populateFinalResultsTable(subjects, results) {
+        const tbody = document.getElementById('resultsList');
+        const thead = document.querySelector('#resultsTable thead');
+        tbody.innerHTML = '';
+
+        // Build dynamic table header with each subject showing test1, test2, exam
+        let headerHtml = `
+        <tr>
+            <th style="width: 5%;">S/N</th>
+            <th style="width: 15%;">Student Name</th>
+            <th style="width: 10%;">Admission #</th>
+    `;
+
+        subjects.forEach(subject => {
+            headerHtml += `
+            <th style="width: 12%; text-align: center;" colspan="4">
+                <strong>${subject}</strong>
+            </th>
+        `;
+        });
+
+        headerHtml += `
+            <th style="width: 8%;">Average</th>
+            <th style="width: 8%;">Position</th>
+        </tr>
+        <tr>
+            <th colspan="3"></th>
+    `;
+
+        subjects.forEach(subject => {
+            headerHtml += `
+            <th style="font-size: 0.85rem; text-align: center;">T1</th>
+            <th style="font-size: 0.85rem; text-align: center;">T2</th>
+            <th style="font-size: 0.85rem; text-align: center;">Ex</th>
+            <th style="font-size: 0.85rem; text-align: center;">Tot</th>
+        `;
+        });
+
+        headerHtml += `
+            <th></th>
+            <th></th>
+        </tr>
+    `;
+
+        thead.innerHTML = headerHtml;
+
+        // Populate rows with detailed scores
+        results.forEach((result, index) => {
+            const row = document.createElement('tr');
+            let subjectScoresHtml = '';
+
+            subjects.forEach(subject => {
+                const scores = result.subjects[subject] || { test1: 0, test2: 0, exam: 0, total: 0, grade: '-' };
+                subjectScoresHtml += `
+                <td style="text-align: center; font-size: 0.85rem;">${scores.test1 || 0}</td>
+                <td style="text-align: center; font-size: 0.85rem;">${scores.test2 || 0}</td>
+                <td style="text-align: center; font-size: 0.85rem;">${scores.exam || 0}</td>
+                <td style="text-align: center; background-color: #f0f0f0; font-weight: bold; font-size: 0.85rem;">${scores.total}</td>
+            `;
+            });
+
+            row.innerHTML = `
+            <td style="font-weight: bold;">${index + 1}</td>
+            <td><strong>${result.student}</strong></td>
+            <td><code>${result.admission}</code></td>
+            ${subjectScoresHtml}
+            <td><span class="badge bg-success" style="font-size: 0.95rem;">${result.average}%</span></td>
+            <td><span class="badge bg-info">${result.position}</span></td>
+        `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function populateResultsTable(summaries) {
+        const tbody = document.getElementById('resultsTable');
+        tbody.innerHTML = '';
+
+        summaries.forEach(summary => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td><strong>${summary.position}</strong></td>
+            <td>${summary.student}</td>
+            <td><code>${summary.admission}</code></td>
+            <td><span class="badge bg-primary">${summary.total}</span></td>
+            <td><span class="badge bg-info">${summary.average}%</span></td>
+        `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function showAlert(type, message) {
+        const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+        document.getElementById('alertContainer').innerHTML = alertHtml;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+
+<style>
+    .nav-tabs .nav-link {
+        color: #666;
+        border-color: #dee2e6;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #f8f9fa;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .score-input {
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .score-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+    }
+</style>
+{% endblock %}

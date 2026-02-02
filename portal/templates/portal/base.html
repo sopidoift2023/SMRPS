@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SMRPS - School Portal{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --dark-bg: #0f172a;
+            --sidebar-bg: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+        }
+
+        /* Top Header */
+        .top-header {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary-color) 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .top-header .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .top-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .top-header .user-info span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .top-header .user-info button,
+        .top-header .user-info a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background 0.3s;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .top-header .user-info button:hover,
+        .top-header .user-info a:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-right: 1rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            color: white;
+            padding: 2rem 0;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar .nav-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #94a3b8;
+            padding: 0 1.5rem;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .sidebar a i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            padding: 1.5rem;
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        /* Tables */
+        .table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--primary-color) 100%);
+            color: white;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table tbody tr:hover {
+            background: #f1f5f9;
+        }
+
+        /* Responsive Tables */
+        .table-responsive {
+            border-radius: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Forms */
+        .form-control {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+        }
+
+        /* Alert */
+        .alert {
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* Page Title */
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            flex-wrap: wrap;
+        }
+
+        .page-title h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark-bg);
+            margin: 0;
+        }
+
+        .page-title i {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+
+        /* Stats Card */
+        .stat-card {
+            padding: 1.5rem;
+            border-radius: 8px;
+            background: white;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-card h5 {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark-bg);
+        }
+
+        /* Sidebar Overlay for Mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 991px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 999;
+                transform: translateX(-100%);
+                padding-top: 80px;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-container {
+                flex-direction: column;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .page-title h1 {
+                font-size: 1.5rem;
+            }
+
+            .page-title i {
+                font-size: 1.8rem;
+            }
+
+            .stat-card .stat-number {
+                font-size: 1.5rem;
+            }
+
+            /* Better touch targets */
+            .sidebar a {
+                padding: 1rem 1.5rem;
+            }
+
+            .btn {
+                padding: 0.75rem 1.25rem;
+            }
+
+            .top-header {
+                padding: 0.75rem 1rem;
+            }
+
+            .top-header .logo {
+                font-size: 1.2rem;
+            }
+
+            .top-header .user-info span {
+                display: none;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .page-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .page-title h1 {
+                font-size: 1.25rem;
+            }
+
+            .card-header {
+                padding: 1rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Top Header -->
+    <div class="top-header">
+        <div style="display: flex; align-items: center;">
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            {% if request.user.school and request.user.school.logo %}
+            <img src="{{ request.user.school.logo.url }}" alt="School Logo"
+                style="height:48px; width:auto; margin-right: 1rem; border-radius: 6px; background: #fff; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            {% endif %}
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i> SMRPS
+            </div>
+        </div>
+        <div class="user-info">
+            <span><i class="fas fa-user-circle"></i> {{ request.user.get_full_name }}</span>
+            <form action="{% url 'logout' %}" method="post" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i> <span class="d-none d-md-inline">Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            {% block sidebar %}
+            <div class="nav-section">
+                <div class="nav-title"><i class="fas fa-cog"></i> Settings</div>
+                <a href="{% url 'portal:change_password' %}">
+                    <i class="fas fa-key"></i> Change Password
+                </a>
+            </div>
+            {% endblock %}
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </main>
+
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Mobile menu toggle
+        document.addEventListener('DOMContentLoaded', function () {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (mobileMenuToggle && sidebar && sidebarOverlay) {
+                mobileMenuToggle.addEventListener('click', function () {
+                    sidebar.classList.toggle('show');
+                    sidebarOverlay.classList.toggle('show');
+                });
+
+                sidebarOverlay.addEventListener('click', function () {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                });
+
+                // Close sidebar when clicking a link (on mobile)
+                sidebar.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        if (window.innerWidth <= 991) {
+                            sidebar.classList.remove('show');
+                            sidebarOverlay.classList.remove('show');
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+
+</html>
