@@ -139,6 +139,16 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Explicitly look for static files in these directories
+STATICFILES_DIRS = [
+    BASE_DIR / 'logo',  # Include the root logo folder
+]
+
+# Configure WhiteNoise to be more forgiving if files are missing from manifest
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_MANIFEST_STRICT = False
+
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Custom User Model
