@@ -3164,3 +3164,31 @@ def get_signature_status(request):
         return JsonResponse({'success': False})
     
     return JsonResponse({'error': 'Invalid user role'}, status=403)
+
+
+@login_required
+@require_GET
+def list_assignments(request):
+    """AJAX endpoint to list all teacher-subject-class assignments (School Admin only)"""
+    if request.user.role != User.Role.SCHOOL_ADMIN:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    # Get all ClassSubject for this school
+    assignments = ClassSubject.objects.filter(
+        school_class__school=request.user.school
+    ).select_related('school_class', 'subject', 'teacher', 'teacher__user')
+    
+    data = []
+    for a in assignments:
+        data.append({
+            'id': a.id,
+            'class_name': a.school_class.name,
+            'class_id': a.school_class.id,
+            'subject_name': a.subject.name,
+            'subject_id': a.subject.id,
+            'teacher_name': str(a.teacher) if a.teacher else 'Unassigned',
+            'teacher_id': a.teacher.id if a.teacher else None,
+            'school_id': a.school_class.school.id
+        })
+        
+    return JsonResponse({'success': True, 'assignments': data})

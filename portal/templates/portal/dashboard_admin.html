@@ -303,11 +303,24 @@
                         </div>
                     </form>
 
-                    <!-- Assignments List -->
                     <hr>
                     <h6>Current Class-Subject Assignments</h6>
-                    <div id="assignmentsList" class="text-center text-muted">
+                    <div id="assignmentsLoading" class="text-center text-muted">
                         <i class="fas fa-spinner fa-spin"></i> Loading assignments...
+                    </div>
+                    <div class="table-responsive" id="assignmentsTableContainer" style="display: none;">
+                        <table class="table table-hover" id="assignmentsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Teacher Name</th>
+                                    <th>Subject</th>
+                                    <th>Class</th>
+                                    <th>School ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -644,6 +657,7 @@
         await loadSubjects();
         await loadClasses();
         await loadSessions();
+        await loadAssignments();
     });
 
     // ==================== TEACHERS ====================
@@ -1214,6 +1228,53 @@
         } catch (error) {
             showAlert('danger', 'Error: ' + error.message);
         }
+    });
+
+    async function loadAssignments() {
+        try {
+            const resp = await fetch('/portal/api/admin/assignments/');
+            const data = await resp.json();
+            const tbody = document.querySelector('#assignmentsTable tbody');
+            tbody.innerHTML = '';
+
+            data.assignments.forEach(a => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${a.teacher_name}</strong> <small class="text-muted">(ID: ${a.teacher_id})</small></td>
+                    <td>${a.subject_name} <small class="text-muted">(ID: ${a.subject_id})</small></td>
+                    <td>${a.class_name} <small class="text-muted">(ID: ${a.class_id})</small></td>
+                    <td><span class="badge bg-secondary">${a.school_id}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('assignmentsLoading').style.display = 'none';
+            document.getElementById('assignmentsTableContainer').style.display = 'block';
+        } catch (e) {
+            console.error('Error loading assignments:', e);
+            document.getElementById('assignmentsLoading').innerHTML = 'Error loading assignments';
+        }
+    }
+
+    document.getElementById('assignTeacherForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            class_id: document.getElementById('assignClass').value,
+            subject_id: document.getElementById('assignSubject').value,
+            teacher_id: document.getElementById('assignTeacher').value
+        };
+        try {
+            const resp = await fetch('/portal/api/admin/assign-teacher/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify(data)
+            });
+            const res = await resp.json();
+            if (res.success) {
+                showAlert('success', res.message);
+                await loadAssignments();
+            } else showAlert('danger', res.error);
+        } catch (e) { showAlert('danger', e.message); }
     });
 
     // ==================== UTILITIES ====================

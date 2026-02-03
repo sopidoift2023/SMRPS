@@ -66,6 +66,7 @@ urlpatterns = [
     path("api/admin/classes/<int:class_id>/delete/", views.delete_class, name="delete_class"),
     
     path("api/admin/assign-teacher/", views.assign_teacher_to_class, name="assign_teacher_to_class"),
+    path("api/admin/assignments/", views.list_assignments, name="list_assignments"),
     path("api/admin/create-session/", views.create_session, name="create_session"),
     path("api/admin/add-student/", views.admin_add_student, name="admin_add_student"),
     
