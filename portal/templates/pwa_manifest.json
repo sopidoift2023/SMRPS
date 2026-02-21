@@ -1,5 +1,3 @@
-{% load static %
-}
 {
     "name": "SMRPS School Portal",
     "short_name": "SMRPS",
@@ -13,23 +11,23 @@
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "{% static 'logo1.png' %}",
+            "src": "/static/logo1.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "{% static 'logo1.png' %}",
+            "src": "/static/logo1.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "{% static 'logo1.png' %}",
+            "src": "/static/logo1.png",
             "sizes": "512x512",
             "type": "image/png"
         },
         {
-            "src": "{% static 'logo1.png' %}",
+            "src": "/static/logo1.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
