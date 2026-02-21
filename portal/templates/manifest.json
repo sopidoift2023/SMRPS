@@ -8,21 +8,31 @@
     "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#0f172a",
+    "theme_color": "#2563eb",
     "description": "School Management & Result Processing System",
     "orientation": "portrait-primary",
     "icons": [
         {
             "src": "{% static 'logo1.png' %}",
             "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "{% static 'logo1.png' %}",
+            "sizes": "192x192",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "maskable"
+        },
+        {
+            "src": "{% static 'logo1.png' %}",
+            "sizes": "512x512",
+            "type": "image/png"
         },
         {
             "src": "{% static 'logo1.png' %}",
             "sizes": "512x512",
             "type": "image/png",
-            "purpose": "any maskable"
+            "purpose": "maskable"
         }
     ]
 }

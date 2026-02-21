@@ -1,5 +1,5 @@
 {% load static %}
-const CACHE_NAME = 'smrps-pwa-v2';
+const CACHE_NAME = 'smrps-pwa-v3';
 const OFFLINE_URL = '/offline/';
 
 // Install event - cache the offline page
