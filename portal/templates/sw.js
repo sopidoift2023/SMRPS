@@ -1,4 +1,5 @@
-const CACHE_NAME = 'smrps-pwa-v1';
+{% load static %}
+const CACHE_NAME = 'smrps-pwa-v2';
 const OFFLINE_URL = '/offline/';
 
 // Install event - cache the offline page
@@ -7,8 +8,8 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll([
                 OFFLINE_URL,
-                '/static/logo1.png',
-                '/static/background.jpg',
+                "{% static 'logo1.png' %}",
+                "{% static 'background.jpg' %}",
             ]);
         })
     );

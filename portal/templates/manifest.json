@@ -1,0 +1,28 @@
+{% load static %
+}
+{
+    "name": "SMRPS School Portal",
+    "short_name": "SMRPS",
+    "start_url": "/",
+    "id": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0f172a",
+    "description": "School Management & Result Processing System",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "{% static 'logo1.png' %}",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "{% static 'logo1.png' %}",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
