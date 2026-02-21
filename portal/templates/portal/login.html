@@ -448,7 +448,12 @@
             <!-- Logo Section -->
             <div class="logo-section">
                 {% load static %}
-                <img src="{% static 'logo1.png' %}" alt="Logo" class="logo-image">
+                <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 16px;">
+                    <img src="{% static 'logo1.png' %}" alt="Logo" class="logo-image" style="margin-bottom: 8px;">
+                    <span
+                        style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); font-weight: 400; letter-spacing: 1px; text-transform: lowercase;">simply
+                        the way</span>
+                </div>
                 <h1 class="logo-title">HaDerech</h1>
                 <p class="logo-subtitle">Software Solution - School Management</p>
             </div>

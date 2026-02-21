@@ -15,6 +15,8 @@
             --accent-purple: #8b5cf6;
             --text-white: #ffffff;
             --text-gray: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -30,41 +32,62 @@
             overflow-x: hidden;
         }
 
-        /* Splash Screen */
+        /* Splash Screen - Professional Dark Gradient */
         #splash-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            transition: opacity 0.8s ease, visibility 0.8s;
+            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s;
+        }
+
+        .splash-logo-container {
+            text-align: center;
+            margin-bottom: 24px;
         }
 
         .splash-logo {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 24px;
-            animation: pulse 2s infinite ease-in-out;
+            width: 130px;
+            height: 130px;
+            margin-bottom: 16px;
+            animation: floatLogo 3s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+        }
+
+        .splash-slogan {
+            font-size: 1.1rem;
+            color: var(--accent-blue);
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            opacity: 0;
+            animation: fadeInSlogan 1.5s forwards 0.5s;
         }
 
         .splash-name {
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 12px;
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 32px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .loading-bar {
-            width: 200px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
+            width: 240px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
             overflow: hidden;
         }
 
@@ -72,29 +95,30 @@
             width: 0%;
             height: 100%;
             background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
-            animation: loading 2.5s forwards ease-in-out;
+            animation: loading 2.5s forwards cubic-bezier(0.65, 0, 0.35, 1);
         }
 
-        @keyframes pulse {
+        @keyframes floatLogo {
 
             0%,
             100% {
-                transform: scale(1);
-                opacity: 1;
+                transform: translateY(0);
             }
 
             50% {
-                transform: scale(1.1);
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes fadeInSlogan {
+            to {
                 opacity: 0.8;
+                letter-spacing: 4px;
             }
         }
 
         @keyframes loading {
-            0% {
-                width: 0%;
-            }
-
-            100% {
+            to {
                 width: 100%;
             }
         }
@@ -102,7 +126,11 @@
         /* Main Content */
         #main-content {
             opacity: 0;
-            transition: opacity 1s ease;
+            transition: opacity 1.5s ease-out;
+        }
+
+        #main-content.visible {
+            opacity: 1;
         }
 
         .hero {
@@ -110,152 +138,234 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 2rem;
-            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent),
-                radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.1), transparent);
+            align-items: flex-start;
+            /* Asymmetric look */
+            text-align: left;
+            padding: 2rem 10%;
+            background: linear-gradient(90deg, #0f172a 30%, rgba(15, 23, 42, 0.4) 100%),
+            url("{% static 'background.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            position: relative;
         }
 
         nav {
             position: absolute;
             top: 0;
+            left: 0;
             width: 100%;
-            padding: 2rem;
+            padding: 2rem 10%;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: transparent;
+            z-index: 100;
         }
 
         .nav-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             text-decoration: none;
             color: white;
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
         }
 
         .nav-logo img {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
+            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
         }
 
         .login-link {
-            padding: 0.75rem 1.5rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            padding: 0.9rem 2.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            /* Modern pill shape */
             text-decoration: none;
             color: white;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            font-weight: 600;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(15px);
+            font-size: 0.95rem;
         }
 
         .login-link:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+
+        .hero-content {
+            max-width: 650px;
+            animation: slideInLeft 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .hero-tag {
+            color: var(--accent-blue);
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            display: block;
         }
 
         .hero-title {
-            font-size: 4rem;
+            font-size: 5rem;
             font-weight: 800;
             margin-bottom: 1.5rem;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            line-height: 1.05;
+            letter-spacing: -3px;
+            color: #ffffff;
         }
 
         .hero-subtitle {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             color: var(--text-gray);
-            max-width: 700px;
-            margin-bottom: 3rem;
-            line-height: 1.6;
+            margin-bottom: 3.5rem;
+            line-height: 1.8;
+            font-weight: 400;
         }
 
         .cta-btn {
-            padding: 1.25rem 2.5rem;
+            padding: 1.3rem 3rem;
             background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
             color: white;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 1.1rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
-            transition: all 0.3s ease;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.5);
+            transition: all 0.4s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .cta-btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.5);
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 20px 45px rgba(59, 130, 246, 0.6);
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            padding: 4rem 2rem;
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            padding: 6rem 4rem;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
         .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 2.5rem;
-            border-radius: 24px;
-            transition: all 0.3s ease;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            border-radius: 32px;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent-blue), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: -1;
         }
 
         .feature-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(59, 130, 246, 0.3);
-            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-card:hover::before {
+            opacity: 0.05;
         }
 
         .feature-icon {
-            width: 50px;
-            height: 50px;
-            background: rgba(59, 130, 246, 0.1);
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
             color: var(--accent-blue);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 14px;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
+            border-radius: 20px;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
         }
 
         .feature-title {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
+            font-size: 1.7rem;
+            margin-bottom: 1.2rem;
+            font-weight: 700;
+            color: white;
         }
 
         .feature-desc {
             color: var(--text-gray);
-            line-height: 1.6;
+            line-height: 1.8;
+            font-size: 1.1rem;
         }
 
         footer {
-            padding: 4rem 2rem;
+            padding: 6rem 2rem;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid var(--glass-border);
             color: var(--text-gray);
-            font-size: 0.9rem;
+            font-size: 1rem;
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        @media (max-width: 992px) {
+            nav {
+                padding: 1.5rem 2rem;
+            }
+
+            .hero-title {
+                font-size: 3.5rem;
+            }
         }
 
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 2.5rem;
+                font-size: 2.8rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .nav-logo span {
+                display: none;
             }
 
             .splash-name {
-                font-size: 1.5rem;
+                font-size: 1.8rem;
             }
         }
     </style>
@@ -264,7 +374,10 @@
 <body>
 
     <div id="splash-screen">
-        <img src="{% static 'logo1.png' %}" alt="Logo" class="splash-logo">
+        <div class="splash-logo-container">
+            <img src="{% static 'logo1.png' %}" alt="Logo" class="splash-logo">
+            <div class="splash-slogan">simply the way</div>
+        </div>
         <h1 class="splash-name">HaDerech Software Solution</h1>
         <div class="loading-bar">
             <div class="loading-progress"></div>
@@ -281,13 +394,16 @@
         </nav>
 
         <section class="hero">
-            <h1 class="hero-title">HaDerech Software Solution</h1>
-            <p class="hero-subtitle">
-                Revolutionizing school management with state-of-the-art result processing and administrative automation.
-                Experience a seamless workflow designed for modern educational institutions.
-            </p>
-            <a href="{% url 'login' %}" class="cta-btn">Get Started Now <i class="fas fa-arrow-right"
-                    style="margin-left: 10px;"></i></a>
+            <div class="hero-content">
+                <span class="hero-tag">Intelligent Management</span>
+                <h1 class="hero-title">Elevate Your Institution</h1>
+                <p class="hero-subtitle">
+                    The next generation of school management. Automate your administrative workflow,
+                    process results with zero error margin, and leverage AI-driven student insights.
+                </p>
+                <a href="{% url 'login' %}" class="cta-btn">Experience The Innovation <i
+                        class="fas fa-arrow-right"></i></a>
+            </div>
         </section>
 
         <section class="features-grid">
@@ -318,16 +434,22 @@
 
     <script>
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                const splash = document.getElementById('splash-screen');
-                const content = document.getElementById('main-content');
+            const splash = document.getElementById('splash-screen');
+            const content = document.getElementById('main-content');
 
+            // Artificial delay to show the professional splash
+            setTimeout(() => {
                 splash.style.opacity = '0';
+
+                // Start revealing content slightly before splash is fully gone
+                setTimeout(() => {
+                    content.classList.add('visible');
+                }, 200);
+
                 setTimeout(() => {
                     splash.style.visibility = 'hidden';
-                    content.style.opacity = '1';
-                }, 800);
-            }, 2500); // 2.5 seconds splash
+                }, 1000);
+            }, 2600);
         });
     </script>
 </body>

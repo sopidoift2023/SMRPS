@@ -21,6 +21,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView
 from portal.views import home
 
 urlpatterns = [
@@ -40,6 +41,9 @@ urlpatterns = [
         auth_views.LogoutView.as_view(),
         name="logout",
     ),
+    # PWA
+    path("sw.js", TemplateView.as_view(template_name="sw.js", content_type="application/javascript"), name="service_worker"),
+    path("offline/", TemplateView.as_view(template_name="offline.html"), name="offline"),
 ]
 
 #  MEDIA FILES (only in development)

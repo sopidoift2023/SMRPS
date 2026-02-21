@@ -14,6 +14,9 @@
     <!-- Favicon -->
     {% load static %}
     <link rel="shortcut icon" href="{% static 'logo1.png' %}" type="image/x-icon">
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#2563eb">
 
     <style>
         :root {
@@ -409,6 +412,9 @@
             </div>
         </div>
         <div class="user-info">
+            <button id="pwaInstallBtn" style="display: none;" title="Install App">
+                <i class="fas fa-download"></i> <span class="d-none d-md-inline">Install App</span>
+            </button>
             <span><i class="fas fa-user-circle"></i> {{ request.user.get_full_name }}</span>
             <form action="{% url 'logout' %}" method="post" style="margin: 0;">
                 {% csrf_token %}
@@ -474,7 +480,6 @@
                     sidebarOverlay.classList.remove('show');
                 });
 
-                // Close sidebar when clicking a link (on mobile)
                 sidebar.querySelectorAll('a').forEach(function (link) {
                     link.addEventListener('click', function () {
                         if (window.innerWidth <= 991) {
@@ -485,8 +490,66 @@
                 });
             }
         });
-    </script>
 
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // PWA Install Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwaInstallBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            console.log("'beforeinstallprompt' event was fired.");
+
+            // Update UI to show install button
+            if (installBtn) {
+                installBtn.style.display = 'inline-flex';
+                installBtn.style.alignItems = 'center';
+                installBtn.style.gap = '0.5rem';
+                installBtn.classList.remove('d-none');
+            }
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) {
+                    console.log('No deferred prompt available.');
+                    return;
+                }
+                // Hide the button
+                installBtn.style.display = 'none';
+                // Show the install prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                // We've used the prompt, and can't use it again, throw it away
+                deferredPrompt = null;
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (installBtn) {
+                installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 
 </body>
