@@ -102,6 +102,11 @@ DATABASES = {
     )
 }
 
+# Fix for Supabase Transaction Pooler (port 6543)
+if '6543' in os.environ.get('DATABASE_URL', ''):
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+    DATABASES['default']['CONN_MAX_AGE'] = 0
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -181,6 +186,11 @@ X_FRAME_OPTIONS = 'DENY'
 # Secure cookies only in production (when DEBUG is False)
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
+
+# Require CSRF Trusted Origins for HTTPS environments like Render
+CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS if host != '*' and 'localhost' not in host and '127.0.0.1' not in host and '192.168' not in host]
+if not CSRF_TRUSTED_ORIGINS and not DEBUG:
+    CSRF_TRUSTED_ORIGINS = ['https://haderech-portal.onrender.com']
 
 # HTTPS Security Settings (automatically enabled in production when DEBUG=False)
 if not DEBUG:
