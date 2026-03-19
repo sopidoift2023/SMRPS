@@ -154,7 +154,7 @@ STATICFILES_DIRS = [
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_MANIFEST_STRICT = False
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'

@@ -299,10 +299,14 @@
         publishModal.show();
     }
 
-    async function processPublishCbt() {
+    async function processPublishCbt(event) {
+        const btn = event.target.closest('button');
         const content_id = document.getElementById('cbt-content-id').value;
         const class_id = document.getElementById('cbt-class').value;
         const duration = document.getElementById('cbt-duration').value;
+
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
 
         try {
             const response = await fetch("{% url 'portal:ai_assistant_publish_exam' %}", {
@@ -318,8 +322,9 @@
                 alert(data.message);
                 publishModal.hide();
             }
-        } catch (e) {
-            alert("Error publishing mock exam.");
+        } finally {
+            btn.classList.remove('btn-loading');
+            btn.disabled = false;
         }
     }
 
@@ -359,11 +364,13 @@
     }
 
     document.getElementById('send-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('send-btn');
         const message = chatInput.value.trim();
         if (!message) return;
 
         appendMessage('user', message);
         chatInput.value = '';
+        btn.classList.add('btn-loading');
         statusIndicator.classList.remove('d-none');
 
         try {
@@ -381,6 +388,7 @@
             appendMessage('ai', "Sorry, something went wrong. Please check your connection.");
         } finally {
             statusIndicator.classList.add('d-none');
+            btn.classList.remove('btn-loading');
         }
     });
 
@@ -401,7 +409,7 @@
         messageArea.style.maxHeight = "450px";
     }
 
-    async function triggerMagic() {
+        const btn = event.target.closest('button');
         const type = document.getElementById('gen-type').value;
         const subject = document.getElementById('gen-subject').value;
         const level = document.getElementById('gen-level').value;
@@ -412,6 +420,7 @@
             return;
         }
 
+        btn.classList.add('btn-loading');
         statusIndicator.classList.remove('d-none');
         hideGenerator();
         appendMessage('user', `Generate ${type.toLowerCase()} for ${subject} (${level}) on the topic: ${topic}`);
@@ -443,6 +452,7 @@
             appendMessage('ai', "Error generating content. Please check your API key.");
         } finally {
             statusIndicator.classList.add('d-none');
+            btn.classList.remove('btn-loading');
         }
     }
 
