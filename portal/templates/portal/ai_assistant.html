@@ -6,134 +6,134 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <!-- Sidebar: Tools & History -->
-        <div class="col-md-3">
-            <div class="card shadow-sm mb-4 border-0" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-3"><i class="fas fa-magic me-2 text-primary"></i>AI Magic Tools
-                    </h5>
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary text-start" onclick="showGenerator('QUESTION')">
-                            <i class="fas fa-book-open me-2"></i>Generate Questions
-                        </button>
-                        <button class="btn btn-outline-success text-start" onclick="showGenerator('NOTE')">
-                            <i class="fas fa-file-alt me-2"></i>Generate Lesson Note
-                        </button>
-                    </div>
-                </div>
-            </div>
+<div class="page-title mb-4">
+    <i class="fas fa-magic"></i>
+    <div>
+        <h1>AI Academic Assistant</h1>
+        <p class="text-muted mb-0">Generate WAEC-aligned questions and lesson notes with <strong>HaDerech AI</strong></p>
+    </div>
+</div>
 
-            <div class="card shadow-sm border-0" style="border-radius: 15px;">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-3"><i class="fas fa-history me-2 text-secondary"></i>Recent
-                        Downloads</h5>
-                    <div class="list-group list-group-flush" id="recent-list">
-                        {% for content in recent_contents %}
-                        <a href="{% url 'portal:ai_assistant_download' content.id %}"
-                            class="list-group-item list-group-item-action border-0 px-0">
-                            <div class="d-flex w-100 justify-content-between">
-                                <small class="fw-bold">{{ content.subject }}</small>
-                                <small class="text-muted">{{ content.created_at|date:"d M" }}</small>
-                            </div>
-                            <small class="text-truncate d-block text-muted">{{ content.topic }}</small>
-                        </a>
-                        {% empty %}
-                        <p class="text-muted small">No recent generations yet.</p>
-                        {% endfor %}
-                    </div>
+<div class="row g-4">
+    <!-- Sidebar: Tools & History -->
+    <div class="col-md-3">
+        <div class="card mb-4">
+            <div class="card-header"><i class="fas fa-wand-magic-sparkles me-2 text-primary"></i>Magic Tools</div>
+            <div class="card-body p-3">
+                <div class="d-grid gap-2">
+                    <button class="action-pill text-start w-100" onclick="showGenerator('QUESTION')">
+                        <i class="fas fa-book-open"></i> Generate Questions
+                    </button>
+                    <button class="action-pill text-start w-100" onclick="showGenerator('NOTE')">
+                        <i class="fas fa-file-alt"></i> Generate Lesson Note
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Chat / Generator Area -->
-        <div class="col-md-9">
-            <div class="card shadow-lg border-0 h-100" style="border-radius: 20px; min-height: 600px;">
-                <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center"
-                    style="border-radius: 20px 20px 0 0;">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-primary text-white p-2 rounded-circle me-3">
-                            <i class="fas fa-robot"></i>
+        <div class="card">
+            <div class="card-header"><i class="fas fa-history me-2"></i> Recent Downloads</div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="recent-list">
+                    {% for content in recent_contents %}
+                    <a href="{% url 'portal:ai_assistant_download' content.id %}" class="list-group-item list-group-item-action border-0 px-3 py-3">
+                        <div class="d-flex w-100 justify-content-between mb-1">
+                            <span class="fw-bold small">{{ content.subject }}</span>
+                            <span class="text-muted x-small">{{ content.created_at|date:"d M" }}</span>
                         </div>
-                        <div>
-                            <h5 class="mb-0 fw-bold">SMRPS AI Assistant</h5>
-                            <small class="text-success"><i class="fas fa-circle me-1" style="font-size: 8px;"></i>
-                                Powered by DeepSeek (WAEC Aligned)</small>
+                        <div class="text-truncate text-muted small">{{ content.topic }}</div>
+                    </a>
+                    {% empty %}
+                    <div class="p-3 text-center text-muted small">No generations yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat / Generator Area -->
+    <div class="col-md-9">
+        <div class="card shadow-sm h-100" style="min-height: 600px; display: flex; flex-direction: column;">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-primary-light text-primary me-3" style="width: 45px; height: 45px; border-radius: 12px;">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">HaDerech Magic Bot</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success" style="width: 8px; height: 8px; border-radius: 50%; padding: 0;">&nbsp;</span>
+                            <small class="text-muted">DeepSeek v3 (WAEC Aligned)</small>
                         </div>
                     </div>
-                    <div id="status-indicator" class="d-none">
-                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                        <span class="ms-2 small text-muted">AI is thinking...</span>
+                </div>
+                <div id="status-indicator" class="d-none">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <span class="ms-2 small text-muted">Manifesting...</span>
+                </div>
+            </div>
+
+            <div class="card-body d-flex flex-column p-0" id="chat-container">
+                <!-- Chat Messages Area -->
+                <div id="message-area" class="flex-grow-1 overflow-auto p-4" style="background: var(--bg-main); max-height: 500px;">
+                    <div class="ai-bubble mb-4">
+                        <div class="card border-0 shadow-sm p-3" style="border-radius: 0 16px 16px 16px; border-left: 4px solid var(--primary-color) !important;">
+                            Hello Teacher! I'm your **HaDerech AI Assistant**. I can help you generate <strong>WAEC-aligned exam questions</strong> or <strong>detailed lesson notes</strong> in seconds.
+                            <br><br>
+                            Click a tool on the left or just type a request below.
+                        </div>
                     </div>
                 </div>
 
-                <div class="card-body d-flex flex-column" id="chat-container">
-                    <!-- Chat Messages Area -->
-                    <div id="message-area" class="flex-grow-1 overflow-auto p-3 mb-3"
-                        style="background: #f8f9fa; border-radius: 15px; max-height: 450px;">
-                        <div class="chat-bubble ai-bubble mb-3">
-                            <div class="p-3 bg-white shadow-sm"
-                                style="border-radius: 0 15px 15px 15px; border-left: 4px solid #0d6efd;">
-                                Hello Teacher! I'm your AI assistant. I can help you generate <strong>WAEC-aligned exam
-                                    questions</strong> or <strong>detailed lesson notes</strong> in seconds.
-                                <br><br>
-                                Use the tools on the left or just type a request below.
+                <!-- Generator Form (Hidden by default) -->
+                <div id="generator-form" class="p-4 border-top d-none bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="fw-bold mb-0" id="gen-title">Generate Questions</h6>
+                        <button type="button" class="btn-close" onclick="hideGenerator()"></button>
+                    </div>
+                    <div class="row g-3">
+                        <input type="hidden" id="gen-type" value="QUESTION">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Subject</label>
+                            <input type="text" id="gen-subject" class="form-control" placeholder="e.g. Mathematics">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Level</label>
+                            <select id="gen-level" class="form-select">
+                                <option value="Senior WAEC (WASSCE)">Senior WAEC (WASSCE)</option>
+                                <option value="Junior WAEC (BECE)">Junior WAEC (BECE)</option>
+                                <option value="SS1">SS1</option>
+                                <option value="SS2">SS2</option>
+                                <option value="JSS1">JSS1</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Topic</label>
+                            <input type="text" id="gen-topic" class="form-control" placeholder="e.g. Algebra">
+                        </div>
+                        <div id="question-options" class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Objective Questions</label>
+                                <input type="number" id="num-obj" class="form-control" value="10">
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Theory Questions</label>
+                                <input type="number" id="num-theory" class="form-control" value="5">
+                            </div>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-teal px-4" onclick="triggerMagic()">
+                                <i class="fas fa-wand-sparkles me-2"></i>Generate Now
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Generator Form (Hidden by default) -->
-                    <div id="generator-form" class="p-3 border rounded mb-3 d-none bg-light shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0" id="gen-title">Generate Questions</h6>
-                            <button type="button" class="btn-close" onclick="hideGenerator()"></button>
-                        </div>
-                        <div class="row g-3">
-                            <input type="hidden" id="gen-type" value="QUESTION">
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold">Subject</label>
-                                <input type="text" id="gen-subject" class="form-control" placeholder="e.g. Mathematics">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold">Level</label>
-                                <select id="gen-level" class="form-select">
-                                    <option value="Senior WAEC (WASSCE)">Senior WAEC (WASSCE)</option>
-                                    <option value="Junior WAEC (BECE)">Junior WAEC (BECE)</option>
-                                    <option value="SS1">SS1</option>
-                                    <option value="SS2">SS2</option>
-                                    <option value="JSS1">JSS1</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold">Topic</label>
-                                <input type="text" id="gen-topic" class="form-control" placeholder="e.g. Algebra">
-                            </div>
-                            <div id="question-options" class="row g-3 mt-1">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Objective Questions</label>
-                                    <input type="number" id="num-obj" class="form-control" value="10">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Theory Questions</label>
-                                    <input type="number" id="num-theory" class="form-control" value="5">
-                                </div>
-                            </div>
-                            <div class="col-12 text-end">
-                                <button class="btn btn-primary" onclick="triggerMagic()">
-                                    <i class="fas fa-magic me-2"></i>Generate Now
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Input Area -->
+                <!-- Input Area -->
+                <div class="p-3 border-top bg-white" style="border-radius: 0 0 20px 20px;">
                     <div class="input-group">
-                        <input type="text" id="chat-input" class="form-control border-0 p-3 shadow-sm"
-                            placeholder="Ask me something or type a topic..."
-                            style="border-radius: 30px 0 0 30px; background: #fff;">
-                        <button class="btn btn-primary px-4 shadow-sm" type="button" id="send-btn"
-                            style="border-radius: 0 30px 30px 0;">
+                        <input type="text" id="chat-input" class="form-control border-0 bg-light p-3" placeholder="Ask me something or type a topic..." style="border-radius: 12px 0 0 12px;">
+                        <button class="btn btn-primary px-4" type="button" id="send-btn" style="border-radius: 0 12px 12px 0;">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>

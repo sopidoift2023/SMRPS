@@ -1,4 +1,9 @@
-{% extends 'portal/base.html' %}
+import os
+import re
+
+# 1. Update Student Dashboard
+student_file = r'C:\Users\User\PycharmProjects\SMRPS\portal\templates\portal\student_dashboard.html'
+new_student_html = """{% extends 'portal/base.html' %}
 {% load static %}
 
 {% block title %}My Dashboard - SMRPS{% endblock %}
@@ -179,3 +184,62 @@
     }
 </script>
 {% endblock %}
+"""
+with open(student_file, 'w', encoding='utf-8') as f:
+    f.write(new_student_html)
+
+
+# 2. Update Admin Dashboard
+admin_file = r'C:\Users\User\PycharmProjects\SMRPS\portal\templates\portal\dashboard_admin.html'
+with open(admin_file, 'r', encoding='utf-8') as f:
+    admin_content = f.read()
+
+# Replace Header
+old_admin_header = r"""    <div class="page-title row align-items-center w-100 m-0">
+        <div class="col-12 col-md-1 text-center mb-3 mb-md-0">
+            <i class="fas fa-school"></i>
+        </div>
+        <div class="col-12 col-md-7 text-center text-md-start">
+            <h2 class="mb-1">School Administration</h2>
+            <p class="text-muted mb-0" style="font-size:0.9rem;">{{ request.user.school.name }} | <span class="badge bg-info">{{ total_students }} Students</span></p>
+        </div>
+        <div class="col-12 col-md-4 text-center text-md-end mt-3 mt-md-0">
+            <a href="{% url 'portal:dashboard' %}" class="btn btn-outline-primary shadow-sm" style="border-radius: 8px;">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
+    </div>"""
+
+new_admin_header = """    <!-- HaDerech Welcome Card -->
+    <div class="card border-0 mb-4 py-2 shadow-sm" style="border-radius: 16px;">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <h4 class="mb-0 fw-bold" style="font-family: 'Poppins', sans-serif;">School Administration</h4>
+                    <span class="badge" style="background: var(--primary-light); color: var(--primary-color); font-size: 0.8rem; font-weight: 600;">{{ total_students }} Students</span>
+                </div>
+                <p class="text-muted mb-0" style="font-size: 0.95rem;">{{ request.user.school.name }}</p>
+            </div>
+            <div class="d-none d-md-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: var(--bg-main); border-radius: 20px;">
+                <i class="fas fa-school" style="font-size: 2.5rem; color: var(--primary-color); opacity: 0.7;"></i>
+            </div>
+        </div>
+    </div>"""
+
+if old_admin_header in admin_content:
+    admin_content = admin_content.replace(old_admin_header, new_admin_header)
+
+# Make all cards beautifully rounded and borderless with shadow-sm (following HaDerech styling)
+admin_content = re.sub(r'<div class="card">', r'<div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">', admin_content)
+# Unify card-headers inside admin
+admin_content = re.sub(r'<div class="card-header bg-primary text-white">', r'<div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">', admin_content)
+# We need to change the white text since bg-white makes the text invisible if it was meant to be white. Wait, the inner elements were text-white? 
+# Usually I can just regex `<h5 class="mb-0">` to adapt. The previous bg-primary made text white, so the text inside is just plain white. If I remove bg-primary, text becomes dark.
+admin_content = admin_content.replace('text-white">', '">') # Remove generic text-white
+admin_content = admin_content.replace('<h5 class="mb-0 text-white">', '<h5 class="mb-0 fw-bold" style="color: var(--text-dark);">')
+admin_content = admin_content.replace('<div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">\n                            <h5 class="mb-0">', '<div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">\n                            <h5 class="mb-0 fw-bold" style="color: var(--text-dark);">')
+
+with open(admin_file, 'w', encoding='utf-8') as f:
+    f.write(admin_content)
+
+print("Dashboards updated with unified HaDerech Indigo Theme successfully!")

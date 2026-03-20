@@ -1,31 +1,19 @@
 {% extends "portal/base.html" %}
 
-{% block title %}Enter Student Results - SMRPS{% endblock %}
+{% block title %}Enter Student Results - HaDerech{% endblock %}
 
 {% block sidebar %}
-<div class="nav-section">
-    <div class="nav-title"><i class="fas fa-bars"></i> Main Menu</div>
-    <a href="{% url 'portal:teacher_dashboard' %}">
+    <div class="menu-label">Main Menu</div>
+    <a href="{% url 'portal:teacher_dashboard' %}" class="nav-item">
         <i class="fas fa-home"></i> Dashboard
     </a>
-    <a href="{% url 'portal:teacher_result_entry' %}" class="active">
+    <a href="{% url 'portal:teacher_result_entry' %}" class="nav-item active">
         <i class="fas fa-edit"></i> Enter Results
     </a>
-</div>
-
-<div class="nav-section">
-    <div class="nav-title"><i class="fas fa-cog"></i> Settings</div>
-    <a href="{% url 'portal:change_password' %}">
+    <div class="menu-label">Settings</div>
+    <a href="{% url 'portal:change_password' %}" class="nav-item">
         <i class="fas fa-key"></i> Change Password
     </a>
-    <form action="{% url 'logout' %}" method="post" style="margin: 0;">
-        {% csrf_token %}
-        <button type="submit"
-            style="display: flex; align-items: center; gap: 1rem; color: #cbd5e1; text-decoration: none; padding: 0.75rem 1.5rem; background: transparent; border: none; width: 100%; cursor: pointer; transition: all 0.3s; border-left: 3px solid transparent; font-size: inherit; font-family: inherit;">
-            <i class="fas fa-sign-out-alt" style="width: 20px; text-align: center;"></i> Logout
-        </button>
-    </form>
-</div>
 {% endblock %}
 
 {% block content %}

@@ -6,13 +6,16 @@
 {% block content %}
 <div class="container-fluid mt-4">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2 class="mb-1"><i class="fas fa-chalkboard"></i> {{ school_class.name }} - Class Management</h2>
-            <p class="text-muted">Manage students, enter scores, and generate results</p>
+    <div class="page-title row align-items-center w-100 m-0">
+        <div class="col-md-1 text-center">
+            <i class="fas fa-chalkboard"></i>
+        </div>
+        <div class="col-md-7">
+            <h2 class="mb-1">{{ school_class.name }} - Class Management</h2>
+            <p class="text-muted mb-0" style="font-size:0.9rem;">Manage students, enter scores, and generate results</p>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{% url 'portal:teacher_dashboard' %}" class="btn btn-outline-primary">
+            <a href="{% url 'portal:teacher_dashboard' %}" class="btn btn-light border shadow-sm shadow-sm" style="border-radius: 8px;">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
         </div>
@@ -62,8 +65,8 @@
     <div class="tab-content">
         <!-- STUDENTS TAB -->
         <div class="tab-pane fade show active" id="studentsTab" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                     <h5 class="mb-0"><i class="fas fa-user-plus"></i> Add New Student to Class</h5>
                 </div>
                 <div class="card-body">
@@ -107,7 +110,7 @@
             </div>
 
             <!-- Students List -->
-            <div class="card mt-4">
+            <div class="card border-0 shadow-sm mt-4" style="border-radius: 16px; margin-bottom: 24px;">
                 <div class="card-header">
                     <h5 class="mb-0">Students in {{ school_class.name }}</h5>
                 </div>
@@ -142,7 +145,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                        <button class="btn btn-sm btn-light border shadow-sm" data-bs-toggle="modal"
                                             data-bs-target="#editStudentModal" data-student-id="{{ student.id }}"
                                             data-first-name="{{ student.first_name }}"
                                             data-middle-name="{{ student.middle_name|default:'' }}"
@@ -174,8 +177,8 @@
 
         <!-- SCORES TAB -->
         <div class="tab-pane fade" id="scoresTab" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                     <h5 class="mb-0"><i class="fas fa-edit"></i> Enter Student Scores by Subject</h5>
                 </div>
                 <div class="card-body">
@@ -247,8 +250,8 @@
 
         <!-- RESULTS TAB -->
         <div class="tab-pane fade" id="resultsTab" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                     <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Generate & View Results</h5>
                 </div>
                 <div class="card-body">

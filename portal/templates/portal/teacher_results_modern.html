@@ -1,24 +1,19 @@
 {% extends "portal/base.html" %}
 
-{% block title %}Enter Student Results - SMRPS{% endblock %}
+{% block title %}Enter Student Results - HaDerech{% endblock %}
 
 {% block sidebar %}
-    <div class="nav-section">
-        <div class="nav-title"><i class="fas fa-bars"></i> Main Menu</div>
-        <a href="{% url 'portal:teacher_dashboard' %}">
-            <i class="fas fa-home"></i> Dashboard
-        </a>
-        <a href="{% url 'portal:teacher_result_entry' %}" class="active">
-            <i class="fas fa-edit"></i> Enter Results
-        </a>
-    </div>
-
-    <div class="nav-section">
-        <div class="nav-title"><i class="fas fa-info-circle"></i> Help</div>
-        <a href="#">
-            <i class="fas fa-question-circle"></i> How to Enter Results
-        </a>
-    </div>
+    <div class="menu-label">Main Menu</div>
+    <a href="{% url 'portal:teacher_dashboard' %}" class="nav-item">
+        <i class="fas fa-home"></i> Dashboard
+    </a>
+    <a href="{% url 'portal:teacher_result_entry' %}" class="nav-item active">
+        <i class="fas fa-edit"></i> Enter Results
+    </a>
+    <div class="menu-label">Settings</div>
+    <a href="{% url 'portal:change_password' %}" class="nav-item">
+        <i class="fas fa-key"></i> Change Password
+    </a>
 {% endblock %}
 
 {% block content %}

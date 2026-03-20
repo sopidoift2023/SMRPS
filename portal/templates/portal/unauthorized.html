@@ -3,6 +3,20 @@
 {% block title %}Unauthorized Access{% endblock %}
 
 {% block content %}
+<style>
+    .score-input {
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 0.5rem !important;
+        font-weight: 600 !important;
+        transition: all 0.2s !important;
+    }
+    .score-input:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 3px var(--primary-light) !important;
+        outline: none !important;
+    }
+</style>
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">

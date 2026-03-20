@@ -10,9 +10,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-blue: #0f172a;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
+            --primary-blue: #1e1b4b;
+            --accent-blue: #4f46e5;
+            --accent-teal: #0d9488;
             --text-white: #ffffff;
             --text-gray: rgba(255, 255, 255, 0.7);
             --glass-bg: rgba(255, 255, 255, 0.03);
@@ -39,7 +39,7 @@
             left: 0;
             width: 100%;
             height: 100vh;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            background: radial-gradient(circle at center, #312e81 0%, #1e1b4b 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -94,7 +94,7 @@
         .loading-progress {
             width: 0%;
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-teal));
             animation: loading 2.5s forwards cubic-bezier(0.65, 0, 0.35, 1);
         }
 
@@ -142,7 +142,7 @@
             /* Asymmetric look */
             text-align: left;
             padding: 2rem 10%;
-            background: linear-gradient(90deg, #0f172a 30%, rgba(15, 23, 42, 0.4) 100%),
+            background: linear-gradient(90deg, #1e1b4b 30%, rgba(15, 23, 42, 0.4) 100%),
             url("{% static 'background.jpg' %}");
             background-size: cover;
             background-position: center;
@@ -245,7 +245,7 @@
 
         .cta-btn {
             padding: 1.3rem 3rem;
-            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-teal) 100%);
             color: white;
             text-decoration: none;
             font-weight: 700;

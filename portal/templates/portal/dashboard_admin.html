@@ -6,24 +6,28 @@
 {% csrf_token %}
 <div class="container-fluid mt-4" style="max-width: 1400px;">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2 class="mb-1"><i class="fas fa-school"></i> School Administration</h2>
-            <p class="text-muted">{{ request.user.school.name }} | <span class="badge bg-info">{{ total_students }}
-                    Students</span></p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'portal:dashboard' %}" class="btn btn-outline-primary">
-                <i class="fas fa-home"></i> Back to Home
-            </a>
+    <!-- HaDerech Welcome Card -->
+    <div class="card border-0 mb-4 py-2 shadow-sm" style="border-radius: 16px;">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <h4 class="mb-0 fw-bold" style="font-family: 'Poppins', sans-serif;">School Administration</h4>
+                    <span class="badge" style="background: var(--primary-light); color: var(--primary-color); font-size: 0.8rem; font-weight: 600;">{{ total_students }} Students</span>
+                </div>
+                <p class="text-muted mb-0" style="font-size: 0.95rem;">{{ request.user.school.name }}</p>
+            </div>
+            <div class="d-none d-md-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: var(--bg-main); border-radius: 20px;">
+                <i class="fas fa-school" style="font-size: 2.5rem; color: var(--primary-color); opacity: 0.7;"></i>
+            </div>
         </div>
     </div>
 
     <!-- Alert Container -->
     <div id="alertContainer"></div>
 
-    <!-- Tabs Navigation -->
-    <ul class="nav nav-tabs mb-4" role="tablist">
+    <!-- Tabs Navigation (Mobile Scrollable) -->
+    <div class="table-responsive border-0 mb-4 pb-1">
+        <ul class="nav nav-tabs flex-nowrap" role="tablist" style="border-bottom: 2px solid var(--border-color); white-space: nowrap;">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachersTab"
                 type="button" role="tab">
@@ -73,6 +77,7 @@
             </button>
         </li>
     </ul>
+    </div>
 
 
     <!-- Tab Content -->
@@ -82,9 +87,9 @@
             <div class="row">
                 <!-- Create Teacher Form -->
                 <div class="col-md-5">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-plus"></i> Add New Teacher</h5>
+                    <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                        <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
+                            <h5 class="mb-0 fw-bold" style="color: var(--text-dark);"><i class="fas fa-plus"></i> Add New Teacher</h5>
                         </div>
                         <div class="card-body">
                             <form id="createTeacherForm" class="needs-validation">
@@ -128,8 +133,8 @@
 
                 <!-- Teachers List -->
                 <div class="col-md-7">
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                        <div class="card-header shadow-sm bg-white">
                             <h5 class="mb-0">Teachers in School</h5>
                         </div>
                         <div class="card-body">
@@ -161,9 +166,9 @@
         <div class="tab-pane fade" id="subjectsTab" role="tabpanel">
             <div class="row">
                 <div class="col-md-5">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-plus"></i> Add Subject</h5>
+                    <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                        <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
+                            <h5 class="mb-0 fw-bold" style="color: var(--text-dark);"><i class="fas fa-plus"></i> Add Subject</h5>
                         </div>
                         <div class="card-body">
                             <form id="createSubjectForm">
@@ -184,8 +189,8 @@
                 </div>
 
                 <div class="col-md-7">
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                        <div class="card-header shadow-sm bg-white">
                             <h5 class="mb-0">Subjects</h5>
                         </div>
                         <div class="card-body">
@@ -215,9 +220,9 @@
         <div class="tab-pane fade" id="classesTab" role="tabpanel">
             <div class="row">
                 <div class="col-md-5">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-plus"></i> Add Class</h5>
+                    <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                        <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
+                            <h5 class="mb-0 fw-bold" style="color: var(--text-dark);"><i class="fas fa-plus"></i> Add Class</h5>
                         </div>
                         <div class="card-body">
                             <form id="createClassForm">
@@ -242,8 +247,8 @@
                 </div>
 
                 <div class="col-md-7">
-                    <div class="card">
-                        <div class="card-header">
+                    <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                        <div class="card-header shadow-sm bg-white">
                             <h5 class="mb-0">Classes</h5>
                         </div>
                         <div class="card-body">
@@ -272,8 +277,8 @@
 
         <!-- ASSIGNMENTS TAB -->
         <div class="tab-pane fade" id="assignmentsTab" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                     <h5 class="mb-0"><i class="fas fa-link"></i> Assign Teacher to Class-Subject</h5>
                 </div>
                 <div class="card-body">
@@ -328,8 +333,8 @@
 
         <!-- RESULTS PDF TAB -->
         <div class="tab-pane fade" id="resultsTab" role="tabpanel">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
+            <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                     <h5 class="mb-0"><i class="fas fa-file-pdf"></i> Download Class Results PDF</h5>
                 </div>
                 <div class="card-body">
@@ -439,8 +444,8 @@
     <div class="tab-pane fade" id="sessionsTab" role="tabpanel">
         <div class="row">
             <div class="col-md-5">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                    <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                         <h5 class="mb-0"><i class="fas fa-plus"></i> Add Academic Session</h5>
                     </div>
                     <div class="card-body">
@@ -461,8 +466,8 @@
                 </div>
             </div>
             <div class="col-md-7">
-                <div class="card">
-                    <div class="card-header">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                    <div class="card-header shadow-sm bg-white">
                         <h6>Existing Sessions</h6>
                     </div>
                     <div class="card-body">
@@ -477,8 +482,8 @@
 
     <!-- ADD STUDENT TAB -->
     <div class="tab-pane fade" id="studentsMgmtTab" role="tabpanel">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
+        <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+            <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                 <h5 class="mb-0"><i class="fas fa-user-plus"></i> Register New Student</h5>
             </div>
             <div class="card-body">
@@ -529,8 +534,8 @@
     <div class="tab-pane fade" id="settingsTab" role="tabpanel">
         <div class="row">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                    <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important;">
                         <h5 class="mb-0"><i class="fas fa-signature"></i> Principal Signature</h5>
                     </div>
                     <div class="card-body">
@@ -552,8 +557,8 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
+                <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+                    <div class="card-header bg-secondary ">
                         <h5 class="mb-0"><i class="fas fa-stamp"></i> School Stamp</h5>
                     </div>
                     <div class="card-body">
