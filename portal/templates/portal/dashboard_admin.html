@@ -861,6 +861,11 @@
 
     document.getElementById('editSubjectForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const id = document.getElementById('editSubjectId').value;
         const data = {
             name: document.getElementById('editSubjectName').value,
@@ -879,6 +884,10 @@
                 await loadSubjects();
             } else showAlert('danger', res.error);
         } catch (e) { showAlert('danger', e.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     window.deleteSubject = async function (id) {
@@ -896,6 +905,11 @@
 
     document.getElementById('createSubjectForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const data = {
             name: document.getElementById('subjectName').value,
             code: document.getElementById('subjectCode').value
@@ -921,6 +935,9 @@
             }
         } catch (error) {
             showAlert('danger', 'Error: ' + error.message);
+        } finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
         }
     });
 
@@ -971,6 +988,11 @@
 
     document.getElementById('editClassForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const id = document.getElementById('editClassId').value;
         const data = {
             name: document.getElementById('editClassName').value,
@@ -988,6 +1010,10 @@
                 showAlert('success', 'Class updated'); await loadClasses();
             } else showAlert('danger', res.error);
         } catch (e) { showAlert('danger', e.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     window.deleteClass = async function (id) {
@@ -1005,6 +1031,11 @@
 
     document.getElementById('createClassForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const data = {
             name: document.getElementById('className').value,
             form_teacher_id: document.getElementById('formTeacher').value || null
@@ -1021,6 +1052,10 @@
                 document.getElementById('createClassForm').reset(); await loadClasses();
             } else showAlert('danger', result.error);
         } catch (error) { showAlert('danger', error.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     // ==================== SESSIONS ====================
@@ -1051,6 +1086,11 @@
 
     document.getElementById('createSessionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const data = {
             name: document.getElementById('sessionName').value,
             is_active: document.getElementById('sessionActive').checked
@@ -1067,11 +1107,20 @@
                 await loadSessions();
             } else showAlert('danger', res.error);
         } catch (e) { showAlert('danger', e.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     // ==================== ADMIN ADD STUDENT ====================
     document.getElementById('adminAddStudentForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const data = {
             class_id: document.getElementById('adminStudentClass').value,
             first_name: document.getElementById('adminStudentFirstName').value,
@@ -1093,6 +1142,10 @@
                 await loadClasses(); // refresh student count
             } else showAlert('danger', res.error);
         } catch (e) { showAlert('danger', e.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     // ==================== PDF DOWNLOAD ====================
