@@ -472,7 +472,7 @@
             {% endif %}
 
             <!-- Login Form -->
-            <form method="post" autocomplete="on">
+            <form id="loginForm" method="post" autocomplete="on">
                 {% csrf_token %}
 
                 <div class="form-group">
@@ -505,6 +505,20 @@
         </div>
     </div>
 
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            var btn = this.querySelector('.submit-btn');
+            // Change text and icon to spinner
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            // To prevent double click without breaking form submission logic
+            setTimeout(function() {
+                btn.disabled = true;
+                btn.style.cursor = 'wait';
+                btn.style.opacity = '0.8';
+            }, 10);
+        });
+    </script>
 </body>
 
 </html>
