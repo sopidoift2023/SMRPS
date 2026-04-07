@@ -33,15 +33,6 @@ body.dark-mode {
     --text-muted: #94a3b8;
     --nav-bg: #0f172a;
 }
-    --primary-light: #1e1e2f;
-    --secondary-color: #94a3b8;
-    --bg-main: #0f172a; /* Dark Slate background */
-    --bg-white: #1e293b; /* Card background */
-    --border-color: #334155;
-    --text-dark: #f8fafc;
-    --text-muted: #94a3b8;
-    --nav-bg: #0f172a;
-}
 
 * {
     margin: 0;
