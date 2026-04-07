@@ -215,7 +215,8 @@
                 document.body.classList.add('dark-mode');
                 if(toggle) {
                     toggle.classList.remove('fa-moon');
-                    toggle.classList.add('fa-sun');
+                    toggle.classList.add('fa-sun', 'text-warning');
+                    Object.assign(toggle.style, { color: '#fbbf24', textShadow: '0 0 10px rgba(251,191,36,0.5)' });
                 }
             }
 
@@ -226,10 +227,12 @@
                     localStorage.setItem('darkMode', darkNow);
                     if (darkNow) {
                         toggle.classList.remove('fa-moon');
-                        toggle.classList.add('fa-sun');
+                        toggle.classList.add('fa-sun', 'text-warning');
+                        Object.assign(toggle.style, { color: '#fbbf24', textShadow: '0 0 10px rgba(251,191,36,0.5)' });
                     } else {
-                        toggle.classList.remove('fa-sun');
+                        toggle.classList.remove('fa-sun', 'text-warning');
                         toggle.classList.add('fa-moon');
+                        Object.assign(toggle.style, { color: '', textShadow: '' });
                     }
                 });
             }
