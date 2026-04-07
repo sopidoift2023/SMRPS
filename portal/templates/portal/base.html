@@ -7,6 +7,8 @@
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Font Awesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Favicon -->
@@ -40,7 +42,7 @@
                 <div class="menu-label">
                     MAIN MENU 
                     <div class="d-flex gap-2 text-muted" style="cursor: pointer;">
-                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-moon" id="darkModeToggle" title="Toggle Dark Mode"></i>
                         <i class="fas fa-headset"></i>
                     </div>
                 </div>
@@ -109,14 +111,21 @@
             <!-- Main Scrollable Content -->
             <main class="main-content">
                 {% if messages %}
-                <div class="messages mb-4">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" style="border-radius: 10px;" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% endfor %}
-                </div>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        {% for message in messages %}
+                        Swal.fire({
+                            icon: '{% if message.tags == "error" %}error{% elif message.tags == "warning" %}warning{% elif message.tags == "info" %}info{% else %}success{% endif %}',
+                            title: '{{ message|escapejs }}',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                        {% endfor %}
+                    });
+                </script>
                 {% endif %}
 
                 {% block content %}
@@ -131,6 +140,19 @@
     <div class="page-loader" id="pageLoader"><div class="page-loader-inner" id="pageLoaderInner"></div></div>
 
     <script>
+        // Global SweetAlert Helper
+        window.showAlert = function(type, message) {
+            Swal.fire({
+                icon: type === 'danger' ? 'error' : type,
+                title: message,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        };
+
         // Global Loading Handler
         document.addEventListener('submit', function(e) {
             const form = e.target;
@@ -183,6 +205,35 @@
                 navigator.serviceWorker.register('/sw.js').catch(err => console.error(err));
             });
         }
+
+        // Dark Mode Toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('darkModeToggle');
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            
+            if (isDark) {
+                document.body.classList.add('dark-mode');
+                if(toggle) {
+                    toggle.classList.remove('fa-moon');
+                    toggle.classList.add('fa-sun');
+                }
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    const darkNow = document.body.classList.contains('dark-mode');
+                    localStorage.setItem('darkMode', darkNow);
+                    if (darkNow) {
+                        toggle.classList.remove('fa-moon');
+                        toggle.classList.add('fa-sun');
+                    } else {
+                        toggle.classList.remove('fa-sun');
+                        toggle.classList.add('fa-moon');
+                    }
+                });
+            }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}

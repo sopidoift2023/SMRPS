@@ -99,6 +99,11 @@ def dashboard_redirect(request):
     
     user = request.user
     
+    # Add a login success message if not shown this session
+    if not request.session.get('login_message_shown', False):
+        messages.success(request, f"Login successful. Welcome {user.first_name or user.username}!")
+        request.session['login_message_shown'] = True
+    
     # Superusers go to admin
     if user.is_superuser:
         return redirect('admin:index')
@@ -1551,9 +1556,13 @@ def create_teacher(request):
         if not all([username, first_name, last_name, staff_id, password]):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         
-        # Check if username exists
+        # Check if username exists globally
         if User.objects.filter(username=username).exists():
-            return JsonResponse({'error': 'Username already exists'}, status=400)
+            return JsonResponse({'error': 'Username already exists. Please choose a different one.'}, status=400)
+            
+        # Check if staff_id exists in this school
+        if TeacherProfile.objects.filter(staff_id=staff_id, school=request.user.school).exists():
+            return JsonResponse({'error': f'Teacher with Staff ID {staff_id} already exists in your school.'}, status=400)
         
         # Create user and teacher profile
         with transaction.atomic():

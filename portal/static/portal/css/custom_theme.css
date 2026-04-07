@@ -17,9 +17,30 @@
     --border-color: #e2e8f0;
     --text-dark: #0f172a;
     --text-muted: #64748b;
+    --nav-bg: #f8faff;
 
     /* High-contrast shadows for modern look */
     --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+body.dark-mode {
+    --primary-light: #1e1e2f;
+    --secondary-color: #94a3b8;
+    --bg-main: #0f172a; /* Dark Slate background */
+    --bg-white: #1e293b; /* Card background */
+    --border-color: #334155;
+    --text-dark: #f8fafc;
+    --text-muted: #94a3b8;
+    --nav-bg: #0f172a;
+}
+    --primary-light: #1e1e2f;
+    --secondary-color: #94a3b8;
+    --bg-main: #0f172a; /* Dark Slate background */
+    --bg-white: #1e293b; /* Card background */
+    --border-color: #334155;
+    --text-dark: #f8fafc;
+    --text-muted: #94a3b8;
+    --nav-bg: #0f172a;
 }
 
 * {
@@ -38,6 +59,7 @@ body {
     background-attachment: fixed;
     color: var(--text-dark);
     min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* App Layout */
@@ -50,7 +72,7 @@ body {
 /* Sidebar */
 .sidebar {
     width: 260px;
-    background: #f8faff; /* Subtly tinted to distinguish from white cards */
+    background: var(--nav-bg); /* Subtly tinted to distinguish from white cards */
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
@@ -168,7 +190,8 @@ body {
 /* Top Header */
 .top-header {
     height: 70px;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--bg-white);
+    opacity: 0.95;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border-color);
@@ -263,6 +286,7 @@ body {
     border-radius: 12px;
     box-shadow: var(--shadow-card);
     margin-bottom: 1.5rem;
+    color: var(--text-dark);
 }
 
 .card-header {

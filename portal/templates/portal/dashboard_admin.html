@@ -92,7 +92,7 @@
                             <h5 class="mb-0 fw-bold" style="color: var(--text-dark);"><i class="fas fa-plus"></i> Add New Teacher</h5>
                         </div>
                         <div class="card-body">
-                            <form id="createTeacherForm" class="needs-validation">
+                            <form id="createTeacherForm" class="needs-validation" data-ajax="true">
                                 <div class="mb-3">
                                     <label for="teacherUsername" class="form-label">Username *</label>
                                     <input type="text" class="form-control" id="teacherUsername" required>
@@ -171,7 +171,7 @@
                             <h5 class="mb-0 fw-bold" style="color: var(--text-dark);"><i class="fas fa-plus"></i> Add Subject</h5>
                         </div>
                         <div class="card-body">
-                            <form id="createSubjectForm">
+                            <form id="createSubjectForm" data-ajax="true">
                                 <div class="mb-3">
                                     <label for="subjectName" class="form-label">Subject Name *</label>
                                     <input type="text" class="form-control" id="subjectName" required>
@@ -225,7 +225,7 @@
                             <h5 class="mb-0 fw-bold" style="color: var(--text-dark);"><i class="fas fa-plus"></i> Add Class</h5>
                         </div>
                         <div class="card-body">
-                            <form id="createClassForm">
+                            <form id="createClassForm" data-ajax="true">
                                 <div class="mb-3">
                                     <label for="className" class="form-label">Class Name *</label>
                                     <input type="text" class="form-control" id="className" placeholder="e.g., JSS1, SS3"
@@ -282,7 +282,7 @@
                     <h5 class="mb-0"><i class="fas fa-link"></i> Assign Teacher to Class-Subject</h5>
                 </div>
                 <div class="card-body">
-                    <form id="assignTeacherForm" class="row g-3 mb-4">
+                    <form id="assignTeacherForm" class="row g-3 mb-4" data-ajax="true">
                         <div class="col-md-3">
                             <label for="assignClass" class="form-label">Select Class *</label>
                             <select class="form-select" id="assignClass" required>
@@ -449,7 +449,7 @@
                         <h5 class="mb-0"><i class="fas fa-plus"></i> Add Academic Session</h5>
                     </div>
                     <div class="card-body">
-                        <form id="createSessionForm">
+                        <form id="createSessionForm" data-ajax="true">
                             <div class="mb-3">
                                 <label for="sessionName" class="form-label">Session Name *</label>
                                 <input type="text" class="form-control" id="sessionName" placeholder="e.g., 2025/2026"
@@ -487,7 +487,7 @@
                 <h5 class="mb-0"><i class="fas fa-user-plus"></i> Register New Student</h5>
             </div>
             <div class="card-body">
-                <form id="adminAddStudentForm" class="row g-3">
+                <form id="adminAddStudentForm" class="row g-3" data-ajax="true">
                     <div class="col-md-3">
                         <label class="form-label">First Name *</label>
                         <input type="text" class="form-control" id="adminStudentFirstName" required>
@@ -592,7 +592,7 @@
                 <h5>Edit Teacher</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editTeacherForm">
+                <form id="editTeacherForm" data-ajax="true">
                     <input type="hidden" id="editTeacherId">
                     <div class="mb-2"><label>First Name</label><input type="text" id="editTeacherFirstName"
                             class="form-control"></div>
@@ -621,7 +621,7 @@
                 <h5>Edit Subject</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editSubjectForm">
+                <form id="editSubjectForm" data-ajax="true">
                     <input type="hidden" id="editSubjectId">
                     <div class="mb-2"><label>Name</label><input type="text" id="editSubjectName" class="form-control">
                     </div>
@@ -642,7 +642,7 @@
                 <h5>Edit Class</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editClassForm">
+                <form id="editClassForm" data-ajax="true">
                     <input type="hidden" id="editClassId">
                     <div class="mb-2"><label>Name</label><input type="text" id="editClassName" class="form-control">
                     </div>
@@ -735,6 +735,11 @@
 
     document.getElementById('editTeacherForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const id = document.getElementById('editTeacherId').value;
         const data = {
             first_name: document.getElementById('editTeacherFirstName').value,
@@ -757,6 +762,10 @@
                 await loadTeachers();
             } else showAlert('danger', res.error);
         } catch (e) { showAlert('danger', e.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     window.deleteTeacher = async function (id) {
@@ -774,6 +783,11 @@
 
     document.getElementById('createTeacherForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
         const data = {
             username: document.getElementById('teacherUsername').value,
             first_name: document.getElementById('teacherFirstName').value,
@@ -796,6 +810,10 @@
                 await loadTeachers();
             } else showAlert('danger', result.error);
         } catch (error) { showAlert('danger', error.message); }
+        finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
     });
 
     // ==================== SUBJECTS ====================
