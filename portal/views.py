@@ -1,6 +1,37 @@
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-@login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, FileResponse
+from django.views.decorators.http import require_GET, require_POST
+from django.db.models import Count, Q
+from django.contrib import messages
+from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
+import json
+import zipfile
+import io
+
+# Models
+from academics.models import (
+    SchoolClass, Subject, StudentResult, ClassSubject, TermResultSummary,
+    StudentAttendance, StudentAffectiveTraits, StudentPsychomotorTraits,
+    StudentTermReport, ClassTermInfo, RATING_CHOICES
+)
+from academics.services import compute_term_results
+from students.models import Student
+from teachers.models import TeacherProfile
+from schools.models import AcademicSession, School
+from accounts.models import User
+from .forms import StudentResultForm
+from .result_pdf_generator import generate_student_result_pdf, generate_class_broadsheet_pdf
+
+# AI Assistant
+from ai_assistant.services import generate_cbt_questions
+
+# Rate limiting
+from config.rate_limiter import rate_limit, adaptive_rate_limit
+
+
 def download_class_cumulative_zip(request, class_id):
     """Download ZIP of all students' cumulative session results for a class (form teacher or admin)."""
     user = request.user
@@ -39,6 +70,7 @@ def download_class_cumulative_zip(request, class_id):
     response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
     return response
 @login_required
+@adaptive_rate_limit(base_max_requests=10, window_seconds=3600)
 def download_cumulative_result(request):
     """Download cumulative session result PDF for the logged-in student."""
     user = request.user
@@ -62,31 +94,7 @@ def download_cumulative_result(request):
     filename = f"{student.last_name}_{student.first_name}_{academic_session.name}_Cumulative.pdf"
     response = FileResponse(pdf_buffer, as_attachment=True, filename=filename)
     return response
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse, FileResponse
-from django.views.decorators.http import require_GET, require_POST
-from django.db.models import Count, Q
-from django.contrib import messages
-from django.db import transaction
-from academics.models import (
-    SchoolClass, Subject, StudentResult, ClassSubject, TermResultSummary,
-    StudentAttendance, StudentAffectiveTraits, StudentPsychomotorTraits,
-    StudentTermReport, ClassTermInfo, RATING_CHOICES
-)
-from academics.services import compute_term_results
-from students.models import Student
-from teachers.models import TeacherProfile
-from schools.models import AcademicSession, School
-from accounts.models import User
-from .forms import StudentResultForm
-from .result_pdf_generator import generate_student_result_pdf, generate_class_broadsheet_pdf
-import json
-import zipfile
-import io
-# --- AI Assistant (Chatbot, Question Generator, Lesson Note, Download, CBT Publish) ---
-from ai_assistant.services import generate_cbt_questions  # if needed for AI endpoints
-from django.views.decorators.csrf import csrf_exempt
+
 
 def home(request):
     """Home page view"""
@@ -302,10 +310,39 @@ def teacher_result_entry(request):
 def get_students_by_class(request):
     """AJAX endpoint to get students by class"""
     class_id = request.GET.get('class_id')
-    if class_id:
-        students = Student.objects.filter(school_class_id=class_id).order_by('last_name', 'first_name')
-        return render(request, "portal/students_partial.html", {"students": students})
-    return render(request, "portal/students_partial.html", {"students": []})
+    user = request.user
+    
+    # Check authorization (Teacher or School Admin)
+    if user.role not in [User.Role.TEACHER, User.Role.SCHOOL_ADMIN]:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    if not class_id:
+        return JsonResponse({'students': []})
+        
+    try:
+        # Verify class belongs to the school
+        school_class = SchoolClass.objects.get(id=class_id, school=user.school)
+        students = Student.objects.filter(school_class=school_class, school=user.school).order_by('last_name', 'first_name')
+        
+        student_data = []
+        for s in students:
+            student_data.append({
+                'id': s.id,
+                'first_name': s.first_name,
+                'middle_name': s.middle_name or '',
+                'last_name': s.last_name,
+                'name': f"{s.last_name} {s.first_name} {s.middle_name or ''}".strip(),
+                'admission_number': s.admission_number,
+                'gender': s.gender,
+                'date_of_birth': s.date_of_birth.strftime('%Y-%m-%d') if s.date_of_birth else '',
+                'is_active': s.is_active
+            })
+            
+        return JsonResponse({'students': student_data})
+    except SchoolClass.DoesNotExist:
+        return JsonResponse({'error': 'Class not found or access denied'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 @require_GET
@@ -336,6 +373,30 @@ def get_class_subjects(request):
     ).values('id', 'name').distinct()
     
     return JsonResponse(list(subjects), safe=False)
+
+@login_required
+@require_GET
+def get_teacher_assigned_classes(request):
+    """API endpoint to get classes assigned to the logged-in teacher (for CBT/dropdowns)"""
+    user = request.user
+    if user.role != User.Role.TEACHER:
+        return JsonResponse({'error': 'Unauthorized - Teachers only'}, status=403)
+        
+    try:
+        teacher_profile = TeacherProfile.objects.get(user=user)
+        assigned_classes = SchoolClass.objects.filter(
+            Q(class_subjects__teacher=teacher_profile) | Q(form_teacher=teacher_profile),
+            school=teacher_profile.school
+        ).distinct().order_by('name')
+        
+        return JsonResponse({
+            'classes': [{'id': c.id, 'name': c.name} for c in assigned_classes],
+            'count': assigned_classes.count()
+        })
+    except TeacherProfile.DoesNotExist:
+        return JsonResponse({'error': 'Teacher profile not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 @require_GET
@@ -982,6 +1043,7 @@ def teacher_save_subject_scores(request, class_id):
 
 @login_required
 @require_GET
+@adaptive_rate_limit(base_max_requests=5, window_seconds=3600, premium_multiplier=3.0)
 def teacher_generate_results(request, class_id):
     """
     AJAX endpoint to get term results summary showing student averages and positions
@@ -1112,6 +1174,7 @@ def teacher_trigger_compute_results(request, class_id):
 
 @login_required
 @require_POST
+@adaptive_rate_limit(base_max_requests=5, window_seconds=3600, premium_multiplier=3.0)
 def form_teacher_generate_final_results(request, class_id):
     """
     AJAX endpoint for form teacher to generate combined final results
@@ -2039,6 +2102,7 @@ def admin_add_student(request):
 
 @login_required
 @require_POST
+@adaptive_rate_limit(base_max_requests=5, window_seconds=3600, premium_multiplier=2.0)
 def generate_auto_comments(request, class_id):
     """
     Generate automatic comments for students based on their performance
@@ -3000,6 +3064,7 @@ def ai_assistant(request):
 
 @csrf_exempt
 @login_required
+@adaptive_rate_limit(base_max_requests=3, window_seconds=3600, premium_multiplier=5.0)
 def ai_assistant_generate(request):
     """Generate questions or lesson notes via DeepSeek API"""
     from ai_assistant.services import DeepSeekService

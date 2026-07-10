@@ -57,6 +57,15 @@ def teacher_add_cbt_question(request):
 			option_d=request.POST['option_d'],
 			correct_option=request.POST['correct_option']
 		)
+		
+		if 'save_and_add' in request.POST:
+			from django.contrib import messages
+			messages.success(request, "Question added successfully.")
+			from django.urls import reverse
+			from django.http import HttpResponseRedirect
+			url = reverse('teacher_add_cbt_question')
+			return HttpResponseRedirect(f"{url}?class_id={school_class.id}&subject_id={subject.id}")
+			
 		return redirect('teacher_review_cbt_questions', class_id=school_class.id, subject_id=subject.id)
 	return render(request, 'academics/cbt_add.html', {
 		'school_class': school_class,
@@ -97,75 +106,174 @@ def teacher_delete_cbt_question(request, question_id):
 # Student starts a CBT session (only published questions)
 @login_required
 def cbt_start(request, subject_id):
-	student = get_object_or_404(Student, user=request.user)
+	"""
+	Start or resume a CBT exam session for a student.
+	
+	Defensive Programming:
+	- Prevent retakes after completion
+	- Prevent access if exam not published
+	- Validate student can only access their own sessions
+	- Auto-score if applicable (First Test, Second Test, Exam)
+	- Practice exams don't register scores
+	"""
+	try:
+		student = Student.objects.get(user=request.user)
+	except Student.DoesNotExist:
+		from django.contrib import messages
+		messages.error(request, "Only students can start a CBT session. Please log in as a student to take the exam.")
+		return redirect('portal:dashboard')
 	subject = get_object_or_404(Subject, id=subject_id)
 	school_class = student.school_class
-	session, created = CBTSession.objects.get_or_create(
-		student=student, school_class=school_class, subject=subject, completed_at=None
-	)
-	questions = CBTQuestion.objects.filter(school_class=school_class, subject=subject, is_published=True)
+	
+	# Get the latest published CBT exam for validation
+	from .models import CBTExam
+	exam = CBTExam.objects.filter(
+		school_class=school_class, 
+		subject=subject, 
+		is_published=True
+	).order_by('-created_at').first()
+	
+	# Prevent access if no published exam
+	if not exam:
+		from django.contrib import messages
+		messages.error(request, "No published exam available for this subject.")
+		return redirect('portal:student_dashboard')
+	
+	# Check for existing completed sessions (retake prevention)
+	existing_completed = CBTSession.objects.filter(
+		student=student, 
+		school_class=school_class, 
+		subject=subject, 
+		completed_at__isnull=False
+	).exists()
+	
+	if existing_completed and exam.cbt_type != 'practice':
+		# Only allow retake for practice exams
+		from django.contrib import messages
+		messages.error(request, f"You have already completed this {exam.get_cbt_type_display()}. Retakes are not allowed.")
+		return redirect('portal:student_dashboard')
+	
+	# Get or create incomplete session (for practice, always allow new attempt)
+	if exam.cbt_type == 'practice':
+		# For practice, create fresh session each time
+		session = CBTSession.objects.create(
+			student=student, 
+			school_class=school_class, 
+			subject=subject
+		)
+	else:
+		# For test/exam, get or create (single attempt)
+		session, created = CBTSession.objects.get_or_create(
+			student=student, 
+			school_class=school_class, 
+			subject=subject, 
+			completed_at=None
+		)
+	
+	questions = CBTQuestion.objects.filter(
+		school_class=school_class, 
+		subject=subject, 
+		is_published=True
+	).order_by('id')
+	
 	if request.method == 'POST':
+		# Prevent resubmission if already completed
+		if session.completed_at:
+			from django.contrib import messages
+			messages.error(request, "This exam session has already been completed.")
+			return redirect('cbt_result', session_id=session.id)
+		
+		# Save responses
 		for q in questions:
 			selected = request.POST.get(f'question_{q.id}')
 			if selected:
 				CBTResponse.objects.update_or_create(
-					session=session, question=q,
+					session=session, 
+					question=q,
 					defaults={
 						'selected_option': selected,
 						'is_correct': selected == q.correct_option
 					}
 				)
+		
+		# Calculate score
 		total = questions.count()
 		correct = CBTResponse.objects.filter(session=session, is_correct=True).count()
 		session.score = (correct / total) * 100 if total > 0 else 0
 		session.completed_at = timezone.now()
 		session.save()
 
-		# Auto-score entry for test/exam CBTs
-		from .models import CBTExam, StudentResult
-		exam = CBTExam.objects.filter(school_class=school_class, subject=subject, is_published=True).order_by('-created_at').first()
-		if exam and exam.cbt_type in ['first_test', 'second_test', 'exam']:
+		# Auto-score entry for test/exam CBTs ONLY (not practice)
+		if exam.cbt_type in ['first_test', 'second_test', 'exam']:
 			# Get current academic session and term
-			from schools.models import AcademicSession, Term
-			academic_session = AcademicSession.objects.filter(school=school_class.school, is_active=True).first()
-			term_obj = Term.objects.filter(session=academic_session, is_active=True).first()
-			term = term_obj.name if term_obj else 'First'
-			# Find or create StudentResult
-			result, _ = StudentResult.objects.get_or_create(
-				student=student,
-				school_class=school_class,
-				subject=subject,
-				academic_session=academic_session,
-				term=term
-			)
-			# Map CBT score to correct field
-			# Scale score to marks
-			if exam.cbt_type == 'first_test':
-				score_val = int(round((correct / total) * 20)) if total > 0 else 0
-				result.test1 = score_val
-			elif exam.cbt_type == 'second_test':
-				score_val = int(round((correct / total) * 20)) if total > 0 else 0
-				result.test2 = score_val
-			elif exam.cbt_type == 'exam':
-				score_val = int(round((correct / total) * 60)) if total > 0 else 0
-				result.exam = score_val
-			# Recalculate total and grade
-			result.total = (result.test1 or 0) + (result.test2 or 0) + (result.exam or 0)
-			result.grade = result.calculate_grade()
-			result.remark = result.calculate_remark()
-			result.save()
+			from schools.models import AcademicSession
+			from academics.models import StudentResult
+			
+			academic_session = AcademicSession.objects.filter(
+				school=school_class.school, 
+				is_active=True
+			).first()
+			
+			if academic_session:
+				# Try to get current term from academic session
+				try:
+					from academics.models import Term
+					term_obj = Term.objects.filter(
+						session=academic_session, 
+						is_active=True
+					).first()
+					term = term_obj.name if term_obj else 'First'
+				except:
+					term = 'First'
+				
+				# Find or create StudentResult
+				result, _ = StudentResult.objects.get_or_create(
+					student=student,
+					school_class=school_class,
+					subject=subject,
+					academic_session=academic_session,
+					term=term,
+					defaults={'test1': 0, 'test2': 0, 'exam': 0}
+				)
+				
+				# Map CBT score to correct field (scale percentage to marks)
+				try:
+					if exam.cbt_type == 'first_test':
+						score_val = int(round((correct / total) * 20)) if total > 0 else 0
+						result.test1 = min(20, max(0, score_val))  # Constrain to 0-20
+					elif exam.cbt_type == 'second_test':
+						score_val = int(round((correct / total) * 20)) if total > 0 else 0
+						result.test2 = min(20, max(0, score_val))  # Constrain to 0-20
+					elif exam.cbt_type == 'exam':
+						score_val = int(round((correct / total) * 60)) if total > 0 else 0
+						result.exam = min(60, max(0, score_val))  # Constrain to 0-60
+					
+					# Recalculate total and grade
+					result.total = (result.test1 or 0) + (result.test2 or 0) + (result.exam or 0)
+					
+					# Calculate grade if method exists
+					if hasattr(result, 'calculate_grade'):
+						result.grade = result.calculate_grade()
+					if hasattr(result, 'calculate_remark'):
+						result.remark = result.calculate_remark()
+					
+					result.save()
+				except Exception as e:
+					# Log error but don't fail the exam submission
+					print(f"Error auto-registering score: {e}")
 
 		return redirect('cbt_result', session_id=session.id)
+	
+	# Prepare responses for resume
 	responses = {r.question_id: r.selected_option for r in session.responses.all()}
-	from .models import CBTExam
-	# Always fetch the latest published exam after possible update
-	exam = CBTExam.objects.filter(school_class=school_class, subject=subject, is_published=True).order_by('-created_at').first()
 	duration = exam.duration if exam else 30
+	
 	return render(request, 'academics/cbt_start.html', {
 		'questions': questions,
 		'session': session,
 		'responses': responses,
 		'duration': duration,
+		'exam_type': exam.get_cbt_type_display() if exam else 'Practice',
 	})
 
 # Teacher review and publish CBT questions
@@ -188,10 +296,15 @@ def teacher_review_cbt_questions(request, class_id, subject_id):
 		exam.cbt_type = cbt_type
 		exam.duration = duration
 		# Depublish/lock logic
+		from django.contrib import messages
 		if 'depublish_exam' in request.POST:
 			exam.is_published = False
+			messages.success(request, f"Exam for {subject.name} has been stopped and deactivated.")
+		elif 'publish_exam' in request.POST:
+			exam.is_published = True
+			messages.success(request, f"Exam for {subject.name} has been successfully published! Students can now take it.")
 		else:
-			exam.is_published = 'publish_exam' in request.POST
+			messages.success(request, f"Exam settings for {subject.name} updated successfully.")
 		exam.save()
 		# Publish selected questions
 		ids = request.POST.getlist('publish')
@@ -210,17 +323,72 @@ def teacher_review_cbt_questions(request, class_id, subject_id):
 # Student views CBT result
 @login_required
 def cbt_result(request, session_id):
+	"""
+	Display CBT exam results to student.
+	
+	Defensive Programming:
+	- Ensure student can only view their own results
+	- Handle incomplete sessions gracefully
+	- Display breakdown of correct/incorrect answers
+	- Show score registration status (for test/exam types)
+	"""
+	# Authorization: Only student can view their own session results
 	session = get_object_or_404(CBTSession, id=session_id, student__user=request.user)
+	
+	# Defensive: Require completed session
+	if not session.completed_at:
+		from django.contrib import messages
+		messages.warning(request, "This exam has not been completed yet.")
+		return redirect('portal:student_dashboard')
+	
+	# Prepare response analysis
 	responses = list(session.responses.select_related('question'))
 	total_questions = len(responses)
 	correct_count = sum(1 for r in responses if r.is_correct)
 	incorrect_count = total_questions - correct_count
+	
+	# Calculate percentage
+	percentage = (correct_count / total_questions * 100) if total_questions > 0 else 0
+	
+	# Determine if score was auto-registered
+	score_registered = False
+	if total_questions > 0:
+		from .models import CBTExam, StudentResult
+		exam = CBTExam.objects.filter(
+			school_class=session.school_class, 
+			subject=session.subject, 
+			is_published=True
+		).order_by('-created_at').first()
+		
+		if exam and exam.cbt_type in ['first_test', 'second_test', 'exam']:
+			# Check if StudentResult was created with this score
+			try:
+				from schools.models import AcademicSession
+				academic_session = AcademicSession.objects.filter(
+					school=session.school_class.school, 
+					is_active=True
+				).first()
+				
+				if academic_session:
+					result = StudentResult.objects.filter(
+						student=session.student,
+						school_class=session.school_class,
+						subject=session.subject,
+						academic_session=academic_session
+					).first()
+					if result:
+						score_registered = True
+			except:
+				pass
+	
 	return render(request, 'academics/cbt_result.html', {
 		'session': session,
 		'responses': responses,
 		'total_questions': total_questions,
 		'correct_count': correct_count,
 		'incorrect_count': incorrect_count,
+		'percentage': percentage,
+		'score_registered': score_registered,
 	})
 
 # Teacher generates CBT questions using AI assistant

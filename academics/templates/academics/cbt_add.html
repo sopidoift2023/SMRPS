@@ -66,6 +66,7 @@
         </select>
     </div>
     <button type="submit" class="btn btn-success">Add Question</button>
+    <button type="submit" name="save_and_add" value="1" class="btn btn-primary ms-2">Save & Add Another</button>
     {% if school_class and subject %}
     <a href="{% url 'teacher_review_cbt_questions' school_class.id subject.id %}" class="btn btn-secondary ms-2">Cancel</a>
     {% endif %}

@@ -23,6 +23,7 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
 from portal.views import home
+from accounts.views import RateLimitedLoginView
 
 urlpatterns = [
     path("", home, name="home"),
@@ -30,10 +31,10 @@ urlpatterns = [
     path("portal/", include("portal.urls")),
     path("academics/", include("academics.urls")),
 
-    # Auth
+    # Auth (with rate limiting on login to prevent brute force)
     path(
         "login/",
-        auth_views.LoginView.as_view(template_name="portal/login.html"),
+        RateLimitedLoginView.as_view(),
         name="login",
     ),
     path(

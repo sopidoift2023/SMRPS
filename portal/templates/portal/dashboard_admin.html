@@ -11,14 +11,26 @@
     <div class="card border-0 mb-4 py-2 shadow-sm" style="border-radius: 16px;">
         <div class="card-body d-flex justify-content-between align-items-center">
             <div>
+                <h5 class="fw-bold mb-2 text-uppercase d-flex align-items-center" style="color: var(--primary-color); letter-spacing: 1px;">
+                    {% if request.user.school and request.user.school.logo %}
+                        <img src="{{ request.user.school.logo.url }}" alt="Logo" style="height: 28px; width: auto;" class="me-2">
+                    {% else %}
+                        <img src="{% static 'logo1.png' %}" alt="Logo" style="height: 28px; width: auto;" class="me-2">
+                    {% endif %}
+                    {{ request.user.school.name|default:"Haderech Schools" }}
+                </h5>
                 <div class="d-flex align-items-center gap-3 mb-2">
                     <h4 class="mb-0 fw-bold" style="font-family: 'Poppins', sans-serif;">School Administration</h4>
                     <span class="badge" style="background: var(--primary-light); color: var(--primary-color); font-size: 0.8rem; font-weight: 600;">{{ total_students }} Students</span>
                 </div>
-                <p class="text-muted mb-0" style="font-size: 0.95rem;">{{ request.user.school.name }}</p>
+                <p class="text-muted mb-0" style="font-size: 0.95rem;">Manage students, teachers, classes and results easily.</p>
             </div>
             <div class="d-none d-md-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: var(--bg-main); border-radius: 20px;">
-                <img src="{% static 'logo1.png' %}" alt="Haderech Logo" style="height: 48px; opacity: 0.85;">
+                {% if request.user.school and request.user.school.logo %}
+                    <img src="{{ request.user.school.logo.url }}" alt="School Logo" style="max-height: 48px; max-width: 48px; opacity: 0.85;">
+                {% else %}
+                    <img src="{% static 'logo1.png' %}" alt="Haderech Logo" style="height: 48px; opacity: 0.85;">
+                {% endif %}
             </div>
         </div>
     </div>
@@ -68,7 +80,7 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="students-mgmt-tab" data-bs-toggle="tab" data-bs-target="#studentsMgmtTab"
                 type="button" role="tab">
-                <i class="fas fa-user-graduate"></i> Add Student
+                <i class="fas fa-user-graduate"></i> Students
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -529,6 +541,45 @@
                 </form>
             </div>
         </div>
+
+        <!-- View and Manage Registered Students Card -->
+        <div class="card border-0 shadow-sm" style="border-radius: 16px; margin-bottom: 24px;">
+            <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0; padding-top: 1.25rem; border-bottom: 1px solid var(--border-color) !important; display: flex; justify-content: space-between; align-items: center;">
+                <h5 class="mb-0"><i class="fas fa-users-cog"></i> View & Manage Registered Students</h5>
+                <div class="d-flex gap-2 align-items-center" style="width: 300px;">
+                    <select class="form-select form-select-sm" id="adminStudentFilterClass" onchange="loadAdminStudents()">
+                        <option value="">-- Choose Class --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="adminStudentsLoading" class="text-center py-4" style="display: none;">
+                    <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                    <p class="text-muted">Loading students...</p>
+                </div>
+                <div id="adminStudentsEmpty" class="text-center py-5 text-muted">
+                    <i class="fas fa-users fa-3x mb-3" style="color: #cbd5e1;"></i>
+                    <p>Select a class above to view and manage registered students.</p>
+                </div>
+                <div id="adminStudentsTableContainer" class="table-responsive" style="display: none;">
+                    <table class="table table-hover" id="adminStudentsList">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Admission Number</th>
+                                <th>Gender</th>
+                                <th>Date of Birth</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- SETTINGS TAB -->
@@ -608,6 +659,54 @@
                     <div class="mb-2"><label>New Password (leave blank to keep)</label><input type="password"
                             id="editTeacherPassword" class="form-control"></div>
                     <button type="submit" class="btn btn-primary w-100 mt-3">Update Teacher</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header bg-primary text-white" style="border-radius: 16px 16px 0 0;">
+                <h5 class="modal-title mb-0">Edit Student Profile</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="editStudentForm" data-ajax="true">
+                    <input type="hidden" id="editStudentId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">First Name *</label>
+                        <input type="text" id="editStudentFirstName" class="form-control p-2.5" style="border-radius: 8px;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Middle Name</label>
+                        <input type="text" id="editStudentMiddleName" class="form-control p-2.5" style="border-radius: 8px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Last Name *</label>
+                        <input type="text" id="editStudentLastName" class="form-control p-2.5" style="border-radius: 8px;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Admission Number *</label>
+                        <input type="text" id="editStudentAdmission" class="form-control p-2.5" style="border-radius: 8px;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Gender *</label>
+                        <select id="editStudentGender" class="form-select p-2.5" style="border-radius: 8px;" required>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Date of Birth</label>
+                        <input type="date" id="editStudentDOB" class="form-control p-2.5" style="border-radius: 8px;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">New Password (leave blank to keep)</label>
+                        <input type="password" id="editStudentPassword" class="form-control p-2.5" style="border-radius: 8px;" placeholder="Enter new password">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 p-2.5 mt-2 fw-bold" style="border-radius: 8px;">Update Student Profile</button>
                 </form>
             </div>
         </div>
@@ -966,7 +1065,7 @@
             });
             document.getElementById('classesLoading').style.display = 'none';
             document.getElementById('classesTableContainer').style.display = 'block';
-            ['assignClass', 'pdfClassSelect', 'adminStudentClass'].forEach(id => {
+            ['assignClass', 'pdfClassSelect', 'adminStudentClass', 'adminStudentFilterClass'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.innerHTML = '<option value="">-- Choose Class --</option>';
@@ -1139,8 +1238,15 @@
             });
             const res = await resp.json();
             if (res.success) {
-                showAlert('success', res.message); document.getElementById('adminAddStudentForm').reset();
+                showAlert('success', res.message);
+                document.getElementById('adminAddStudentForm').reset();
                 await loadClasses(); // refresh student count
+                
+                // Refresh the manage students list if the filter is set to the same class
+                const filteredClassId = document.getElementById('adminStudentFilterClass').value;
+                if (filteredClassId === data.class_id) {
+                    await loadAdminStudents();
+                }
             } else showAlert('danger', res.error);
         } catch (e) { showAlert('danger', e.message); }
         finally {
@@ -1148,6 +1254,156 @@
             btn.disabled = false;
         }
     });
+
+    // ==================== STUDENTS MANAGEMENT ====================
+    let adminClassStudents = []; // Store students globally for lookups
+
+    window.loadAdminStudents = async function() {
+        const classId = document.getElementById('adminStudentFilterClass').value;
+        const loading = document.getElementById('adminStudentsLoading');
+        const empty = document.getElementById('adminStudentsEmpty');
+        const tableContainer = document.getElementById('adminStudentsTableContainer');
+        const tbody = document.querySelector('#adminStudentsList tbody');
+        
+        if (!classId) {
+            loading.style.display = 'none';
+            tableContainer.style.display = 'none';
+            empty.style.display = 'block';
+            empty.innerHTML = `
+                <i class="fas fa-users fa-3x mb-3" style="color: #cbd5e1;"></i>
+                <p>Select a class above to view and manage registered students.</p>
+            `;
+            return;
+        }
+
+        loading.style.display = 'block';
+        empty.style.display = 'none';
+        tableContainer.style.display = 'none';
+        tbody.innerHTML = '';
+
+        try {
+            const response = await fetch(`/portal/api/students/?class_id=${classId}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                showAlert('danger', data.error);
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                empty.innerHTML = `<p class="text-danger">${data.error}</p>`;
+                return;
+            }
+
+            adminClassStudents = data.students;
+
+            if (data.students.length === 0) {
+                loading.style.display = 'none';
+                empty.style.display = 'block';
+                empty.innerHTML = `
+                    <i class="fas fa-users-slash fa-3x mb-3" style="color: #cbd5e1;"></i>
+                    <p>No students registered in this class yet.</p>
+                `;
+                return;
+            }
+
+            data.students.forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${student.name}</strong></td>
+                    <td><code>${student.admission_number}</code></td>
+                    <td>${student.gender === 'M' ? 'Male' : 'Female'}</td>
+                    <td>${student.date_of_birth || '-'}</td>
+                    <td><span class="badge ${student.is_active ? 'bg-success' : 'bg-secondary'}">${student.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openEditStudent(${student.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteAdminStudent(${student.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            loading.style.display = 'none';
+            tableContainer.style.display = 'block';
+        } catch (error) {
+            loading.style.display = 'none';
+            empty.style.display = 'block';
+            empty.innerHTML = `<p class="text-danger">Error: ${error.message}</p>`;
+            showAlert('danger', 'Error loading students: ' + error.message);
+        }
+    }
+
+    window.openEditStudent = function (id) {
+        const s = adminClassStudents.find(x => x.id === id);
+        if (!s) return;
+        document.getElementById('editStudentId').value = s.id;
+        document.getElementById('editStudentFirstName').value = s.first_name;
+        document.getElementById('editStudentMiddleName').value = s.middle_name || '';
+        document.getElementById('editStudentLastName').value = s.last_name;
+        document.getElementById('editStudentAdmission').value = s.admission_number;
+        document.getElementById('editStudentGender').value = s.gender;
+        document.getElementById('editStudentDOB').value = s.date_of_birth || '';
+        document.getElementById('editStudentPassword').value = '';
+        new bootstrap.Modal(document.getElementById('editStudentModal')).show();
+    };
+
+    document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
+        const id = document.getElementById('editStudentId').value;
+        const data = {
+            first_name: document.getElementById('editStudentFirstName').value,
+            middle_name: document.getElementById('editStudentMiddleName').value,
+            last_name: document.getElementById('editStudentLastName').value,
+            admission_number: document.getElementById('editStudentAdmission').value,
+            gender: document.getElementById('editStudentGender').value,
+            date_of_birth: document.getElementById('editStudentDOB').value,
+            password: document.getElementById('editStudentPassword').value
+        };
+        try {
+            const resp = await fetch(`/portal/api/students/${id}/edit/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                body: JSON.stringify(data)
+            });
+            const res = await resp.json();
+            if (res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editStudentModal')).hide();
+                showAlert('success', 'Student profile updated successfully');
+                await loadAdminStudents();
+                await loadClasses(); // Refresh student count in classes list
+            } else {
+                showAlert('danger', res.error);
+            }
+        } catch (e) {
+            showAlert('danger', e.message);
+        } finally {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
+    });
+
+    window.deleteAdminStudent = async function (id) {
+        if (!confirm('Are you sure you want to delete this student? This will also delete their login account and all their records.')) return;
+        try {
+            const resp = await fetch(`/portal/api/students/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+            });
+            const res = await resp.json();
+            if (res.success) {
+                showAlert('success', 'Student deleted successfully');
+                await loadAdminStudents();
+                await loadClasses(); // Refresh student count in classes list
+            } else {
+                showAlert('danger', res.error);
+            }
+        } catch (e) {
+            showAlert('danger', e.message);
+        }
+    };
 
     // ==================== PDF DOWNLOAD ====================
     document.getElementById('downloadPdfBtn').addEventListener('click', async () => {

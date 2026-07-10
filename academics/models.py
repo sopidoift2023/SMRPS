@@ -51,6 +51,22 @@ class CBTExam(models.Model):
     class Meta:
         unique_together = ("school_class", "subject", "cbt_type")
 
+    def clean(self):
+        """Defensive validation for CBT configuration."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate duration is reasonable
+        if self.duration is None or self.duration <= 0:
+            raise ValidationError({'duration': 'Duration must be greater than 0 minutes'})
+        if self.duration > 480:  # Max 8 hours
+            raise ValidationError({'duration': 'Duration cannot exceed 8 hours (480 minutes)'})
+        
+        # Ensure school consistency
+        if self.school_class.school != self.school:
+            raise ValidationError('School must match the class\'s school')
+        if self.subject.school != self.school:
+            raise ValidationError('Subject must belong to the same school')
+
     def __str__(self):
         return f"CBTExam: {self.school_class} - {self.subject} ({self.get_cbt_type_display()})"
 
@@ -69,6 +85,39 @@ class CBTQuestion(models.Model):
     is_published = models.BooleanField(default=False, help_text="Only published questions are visible to students.")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        # Composite index for efficient querying
+        indexes = [
+            models.Index(fields=['school_class', 'subject', 'is_published']),
+            models.Index(fields=['school', 'is_published']),
+        ]
+
+    def clean(self):
+        """Defensive validation for CBT question."""
+        from django.core.exceptions import ValidationError
+        
+        # Validate text is not empty
+        if not self.text or not self.text.strip():
+            raise ValidationError({'text': 'Question text cannot be empty'})
+        
+        # Validate all options are provided and different
+        options = [self.option_a, self.option_b, self.option_c, self.option_d]
+        if not all(options):
+            raise ValidationError('All four options must be provided')
+        
+        if len(set(options)) < 4:
+            raise ValidationError('All options must be different')
+        
+        # Validate correct option corresponds to an actual option
+        if self.correct_option not in ['A', 'B', 'C', 'D']:
+            raise ValidationError({'correct_option': 'Invalid correct option'})
+        
+        # Ensure school consistency
+        if self.school_class.school != self.school:
+            raise ValidationError('School must match the class\'s school')
+        if self.subject.school != self.school:
+            raise ValidationError('Subject must belong to the same school')
+
     def __str__(self):
         return f"{self.subject.name} - {self.text[:40]}..."
 
@@ -80,14 +129,64 @@ class CBTSession(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     score = models.FloatField(null=True, blank=True)
 
+    class Meta:
+        # Prevent duplicate incomplete sessions efficiently
+        constraints = [
+            models.UniqueConstraint(
+                fields=['student', 'school_class', 'subject'],
+                condition=models.Q(completed_at__isnull=True),
+                name='unique_incomplete_cbt_session'
+            )
+        ]
+        # Index for efficient lookups
+        indexes = [
+            models.Index(fields=['student', 'completed_at']),
+            models.Index(fields=['school_class', 'subject', 'completed_at']),
+        ]
+
+    def clean(self):
+        """Defensive validation for CBT session."""
+        from django.core.exceptions import ValidationError
+        
+        # Ensure score is within valid range if set
+        if self.score is not None:
+            if not (0 <= self.score <= 100):
+                raise ValidationError({'score': 'Score must be between 0 and 100'})
+        
+        # Ensure completed_at is after started_at if set
+        if self.completed_at and self.completed_at < self.started_at:
+            raise ValidationError({'completed_at': 'Completion time cannot be before start time'})
+
     def __str__(self):
-        return f"Session: {self.student} - {self.subject} ({self.started_at})"
+        status = f"Completed: {self.score}%" if self.completed_at else "In Progress"
+        return f"Session: {self.student} - {self.subject} ({status})"
 
 class CBTResponse(models.Model):
     session = models.ForeignKey(CBTSession, on_delete=models.CASCADE, related_name='responses')
     question = models.ForeignKey(CBTQuestion, on_delete=models.CASCADE)
     selected_option = models.CharField(max_length=1, choices=[('A','A'),('B','B'),('C','C'),('D','D')])
     is_correct = models.BooleanField()
+
+    class Meta:
+        # Prevent duplicate responses for same question in same session
+        unique_together = ('session', 'question')
+        indexes = [
+            models.Index(fields=['session', 'is_correct']),
+        ]
+
+    def clean(self):
+        """Defensive validation for CBT response."""
+        from django.core.exceptions import ValidationError
+        
+        # Ensure selected_option is valid
+        if self.selected_option not in ['A', 'B', 'C', 'D']:
+            raise ValidationError({'selected_option': 'Selected option must be A, B, C, or D'})
+        
+        # Ensure question exists and belongs to same context
+        if self.question.school_class != self.session.school_class:
+            raise ValidationError('Question must belong to the same class as the session')
+        if self.question.subject != self.session.subject:
+            raise ValidationError('Question must belong to the same subject as the session')
 
     def __str__(self):
         return f"{self.session.student} - {self.question.subject} - QID:{self.question.id}"

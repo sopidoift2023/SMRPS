@@ -43,6 +43,7 @@ urlpatterns = [
     
     # AJAX Endpoints - Data Retrieval
     path("api/students/", views.get_students_by_class, name="get_students_by_class"),
+    path("api/teacher-classes/", views.get_teacher_assigned_classes, name="get_teacher_assigned_classes"),
     path("api/class-subjects/", views.get_class_subjects, name="get_class_subjects"),
     path("api/students-results/", views.get_students_results, name="get_students_results"),
     path("api/term-results/", views.get_term_results, name="get_term_results"),

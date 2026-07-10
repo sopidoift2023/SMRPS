@@ -7,9 +7,16 @@ django.setup()
 from accounts.models import User
 
 def create_admin():
-    username = os.environ.get('ADMIN_USERNAME', 'admin')
-    email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
-    password = os.environ.get('ADMIN_PASSWORD', 'adminpassword123')
+    username = os.environ.get('ADMIN_USERNAME')
+    email = os.environ.get('ADMIN_EMAIL')
+    password = os.environ.get('ADMIN_PASSWORD')
+    
+    if not username:
+        raise ValueError("ADMIN_USERNAME environment variable is missing or empty.")
+    if not email:
+        raise ValueError("ADMIN_EMAIL environment variable is missing or empty.")
+    if not password:
+        raise ValueError("ADMIN_PASSWORD environment variable is missing or empty.")
     
     try:
         user = User.objects.get(username=username)

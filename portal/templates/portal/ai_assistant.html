@@ -225,11 +225,76 @@
 </style>
 
 <script>
+    /**
+     * AI Assistant Page - Defensive Programming Implementation
+     * Handles pre-filled parameters from CBT modal and provides robust error handling
+     */
+
     const session_id = "{{ session_id }}";
     const downloadUrlTemplate = "{% url 'portal:ai_assistant_download' 0 %}";
     const chatInput = document.getElementById('chat-input');
     const messageArea = document.getElementById('message-area');
     const statusIndicator = document.getElementById('status-indicator');
+
+    // Initialize page with pre-filled parameters if coming from CBT modal
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            initializeWithURLParameters();
+        } catch (error) {
+            console.error('Error initializing AI assistant:', error);
+        }
+    });
+
+    /**
+     * Initialize the page with URL parameters from the CBT modal
+     * Defensive: validates all parameters before using them
+     */
+    function initializeWithURLParameters() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Extract parameters with validation
+            const classId = urlParams.get('class_id');
+            const className = urlParams.get('class_name');
+            const subjectId = urlParams.get('subject_id');
+            const subjectName = urlParams.get('subject_name');
+            const topic = urlParams.get('topic') || '';
+            const level = urlParams.get('level') || 'Senior';
+            const objectiveCount = parseInt(urlParams.get('objective_count')) || 10;
+            const theoryCount = parseInt(urlParams.get('theory_count')) || 5;
+            const type = urlParams.get('type') || 'QUESTION';
+
+            // Check if we have the essential parameters (class and subject)
+            if (!classId || !subjectId || !subjectName) {
+                // No parameters passed, show normal initialization
+                return;
+            }
+
+            // Pre-fill the generator form
+            const genSubjectInput = document.getElementById('gen-subject');
+            const genLevelSelect = document.getElementById('gen-level');
+            const genTopicInput = document.getElementById('gen-topic');
+            const numObjInput = document.getElementById('num-obj');
+            const numTheoryInput = document.getElementById('num-theory');
+
+            if (genSubjectInput) genSubjectInput.value = subjectName;
+            if (genLevelSelect) genLevelSelect.value = level;
+            if (genTopicInput) genTopicInput.value = topic;
+            if (numObjInput) numObjInput.value = Math.max(1, Math.min(50, objectiveCount));
+            if (numTheoryInput) numTheoryInput.value = Math.max(0, Math.min(20, theoryCount));
+
+            // Show the generator form automatically
+            showGenerator(type);
+
+            // Show an info message to the teacher
+            const message = `Ready to generate ${type === 'QUESTION' ? 'questions' : 'lesson notes'} for <strong>${subjectName}</strong> (${className})${topic ? ' on <strong>' + topic + '</strong>' : ''}. Click "Generate Now" to proceed.`;
+            appendMessage('ai', message);
+
+        } catch (error) {
+            console.error('Error parsing URL parameters:', error);
+            // Continue normally if parameter parsing fails
+        }
+    }
 
     function appendMessage(role, text, content_id = null) {
         const div = document.createElement('div');

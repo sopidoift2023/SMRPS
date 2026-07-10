@@ -1,4 +1,5 @@
 {% extends "portal/base.html" %}
+{% load static %}
 
 {% block title %}Teacher Dashboard - SMRPS{% endblock %}
 
@@ -29,6 +30,14 @@
 <div class="card border-0 mb-4 py-2 shadow-sm" style="border-radius: 16px;">
     <div class="card-body d-flex justify-content-between align-items-center">
         <div>
+            <h5 class="fw-bold mb-2 text-uppercase d-flex align-items-center" style="color: var(--primary-color); letter-spacing: 1px;">
+                {% if request.user.school and request.user.school.logo %}
+                    <img src="{{ request.user.school.logo.url }}" alt="Logo" style="height: 28px; width: auto;" class="me-2">
+                {% else %}
+                    <img src="{% static 'logo1.png' %}" alt="Logo" style="height: 28px; width: auto;" class="me-2">
+                {% endif %}
+                {{ request.user.school.name|default:"Haderech Schools" }}
+            </h5>
             <div class="d-flex align-items-center gap-3 mb-3">
                 <h4 class="mb-0 fw-bold" style="font-family: 'Poppins', sans-serif;">Welcome {{ request.user.last_name|upper|default:"TEACHER" }}, {{ request.user.first_name|upper|default:"" }}</h4>
                 <span class="badge" style="background: var(--primary-light); color: var(--primary-color); font-size: 0.8rem; font-weight: 600;">{{ request.user.username }}</span>
@@ -167,26 +176,391 @@
 </button>
 
 <!-- Modals -->
-<div class="modal fade" id="cbtModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- CBT Question Generation Modal -->
+<div class="modal fade" id="cbtModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
             <div class="modal-header bg-primary text-white" style="border-radius: 16px 16px 0 0;">
-                <h5 class="modal-title"><i class="fas fa-laptop-code"></i> Generate Questions</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-laptop-code"></i>
+                    <h5 class="modal-title mb-0">Generate CBT Questions</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold">Select Class</label>
-                        <select class="form-select border-0 bg-light p-3" style="border-radius: 12px;">
-                            <option>-- Choose Class --</option>
+                <!-- Status Messages -->
+                <div id="cbtAlertContainer" class="mb-3"></div>
+
+                <form id="cbtGeneratorForm">
+                    <!-- Class Selection -->
+                    <div class="mb-4">
+                        <label for="cbtClassSelect" class="form-label fw-bold">
+                            <i class="fas fa-building text-primary"></i> Select Class *
+                        </label>
+                        <select id="cbtClassSelect" class="form-select p-3" style="border-radius: 12px; border-color: #e2e8f0;" required>
+                            <option value="">-- Choose Class --</option>
                         </select>
+                        <small id="cbtClassError" class="text-danger d-none mt-1 d-block"></small>
                     </div>
-                    <button type="button" class="btn btn-primary w-100 py-3 mt-3 shadow-sm" style="border-radius: 12px; font-weight: 700;">Continue <i class="fas fa-arrow-right ms-2"></i></button>
+
+                    <!-- Subject Selection -->
+                    <div class="mb-4">
+                        <label for="cbtSubjectSelect" class="form-label fw-bold">
+                            <i class="fas fa-book text-primary"></i> Select Subject *
+                        </label>
+                        <select id="cbtSubjectSelect" class="form-select p-3" style="border-radius: 12px; border-color: #e2e8f0;" required disabled>
+                            <option value="">-- First select a class --</option>
+                        </select>
+                        <small id="cbtSubjectError" class="text-danger d-none mt-1 d-block"></small>
+                    </div>
+
+                    <!-- Info text -->
+                    <div class="alert alert-info border-0 rounded-12" style="border-radius: 12px;">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>After selecting a class and subject, you'll be able to:<br>
+                        ✓ Add or edit questions<br>
+                        ✓ Set CBT type (Practice, 1st Test, 2nd Test, Exam)<br>
+                        ✓ Set time duration<br>
+                        ✓ Publish the exam</small>
+                    </div>
                 </form>
+            </div>
+            <div class="modal-footer bg-light p-3" style="border-radius: 0 0 16px 16px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="cbtContinueBtn" class="btn btn-primary px-4" disabled>
+                    <i class="fas fa-arrow-right me-2"></i> Continue
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- JavaScript for CBT Modal -->
+<script>
+    /**
+     * CBT Question Generator Modal - Defensive Programming Implementation
+     * Handles class and subject selection with proper error handling
+     */
+    
+    // Cache DOM elements to avoid repeated queries
+    const cbtElements = {
+        modal: null,
+        classSelect: null,
+        subjectSelect: null,
+        continueBtn: null,
+        alertContainer: null,
+        form: null
+    };
+
+    // Initialize cache on DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        cbtElements.modal = document.getElementById('cbtModal');
+        cbtElements.classSelect = document.getElementById('cbtClassSelect');
+        cbtElements.subjectSelect = document.getElementById('cbtSubjectSelect');
+        cbtElements.continueBtn = document.getElementById('cbtContinueBtn');
+        cbtElements.alertContainer = document.getElementById('cbtAlertContainer');
+        cbtElements.form = document.getElementById('cbtGeneratorForm');
+
+        // Bind event listeners
+        if (cbtElements.classSelect) {
+            cbtElements.classSelect.addEventListener('change', handleClassChange);
+        }
+        if (cbtElements.subjectSelect) {
+            cbtElements.subjectSelect.addEventListener('change', validateFormAndEnableButton);
+        }
+        if (cbtElements.continueBtn) {
+            cbtElements.continueBtn.addEventListener('click', handleContinueClick);
+        }
+        if (cbtElements.modal) {
+            cbtElements.modal.addEventListener('show.bs.modal', handleModalOpen);
+        }
+
+        // Populate classes on load
+        populateClasses();
+    });
+
+    /**
+     * Populate classes dropdown with teacher's assigned classes
+     */
+    function populateClasses() {
+        try {
+            loadTeacherClasses();
+        } catch (error) {
+            console.error('Error populating classes:', error);
+            showAlert('error', 'Could not load your classes. Please refresh the page.');
+        }
+    }
+
+    /**
+     * Load teacher's classes via dedicated API endpoint
+     */
+    function loadTeacherClasses() {
+        const classesEndpoint = '/portal/api/teacher-classes/';
+        
+        fetch(classesEndpoint, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('API error: ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (data.classes && Array.isArray(data.classes) && data.classes.length > 0) {
+                populateSelectOptions(cbtElements.classSelect, data.classes);
+                showAlert('success', `Found ${data.count} class(es). Select one to view assigned subjects.`);
+            } else if (data.classes && data.classes.length === 0) {
+                showAlert('error', data.message || 'You have no classes assigned. Please contact your administrator.');
+                cbtElements.classSelect.innerHTML = '<option value="">-- No classes assigned --</option>';
+            } else {
+                throw new Error('Invalid API response');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching classes from API:', error);
+            showAlert('error', 'Could not load your classes. Please ensure you have assigned classes and try again.');
+            cbtElements.classSelect.innerHTML = '<option value="">-- Unable to load classes --</option>';
+        });
+    }
+
+    /**
+     * Fetch teacher's classes from API endpoint
+     */
+    function fetchTeacherClassesFromAPI() {
+        // Build a dynamic URL to get assigned classes
+        const schoolClassUrl = '/portal/api/classes/';
+        
+        fetch(schoolClassUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('API error: ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (data.classes && Array.isArray(data.classes)) {
+                populateSelectOptions(cbtElements.classSelect, data.classes);
+            } else {
+                throw new Error('Invalid API response');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching classes from API:', error);
+            showAlert('error', 'Could not load your classes. Please ensure you have assigned classes and try again.');
+        });
+    }
+
+    /**
+     * Handle class selection change - load subjects for selected class
+     */
+    function handleClassChange() {
+        const classId = cbtElements.classSelect.value;
+        clearElement(cbtElements.subjectSelect);
+        clearErrors();
+
+        if (!classId) {
+            cbtElements.subjectSelect.disabled = true;
+            cbtElements.subjectSelect.innerHTML = '<option value="">-- First select a class --</option>';
+            validateFormAndEnableButton();
+            return;
+        }
+
+        cbtElements.subjectSelect.disabled = true;
+        cbtElements.subjectSelect.innerHTML = '<option value="">Loading subjects...</option>';
+
+        // Fetch subjects for this class
+        fetch(`/portal/api/class-subjects/?class_id=${encodeURIComponent(classId)}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to fetch subjects');
+            return response.json();
+        })
+        .then(subjects => {
+            if (!Array.isArray(subjects) || subjects.length === 0) {
+                throw new Error('No subjects assigned to this class');
+            }
+            
+            // Validate subjects data
+            const validSubjects = subjects.filter(s => s && s.id && s.name);
+            if (validSubjects.length === 0) {
+                throw new Error('Invalid subject data received');
+            }
+
+            populateSelectOptions(cbtElements.subjectSelect, validSubjects);
+            cbtElements.subjectSelect.disabled = false;
+            showAlert('success', `Found ${validSubjects.length} subject(s) for this class`);
+        })
+        .catch(error => {
+            console.error('Error fetching subjects:', error);
+            cbtElements.subjectSelect.disabled = true;
+            cbtElements.subjectSelect.innerHTML = '<option value="">-- No subjects available --</option>';
+            showAlert('error', error.message || 'Could not load subjects. Please ensure you are assigned to teach this class.');
+        })
+        .finally(() => {
+            validateFormAndEnableButton();
+        });
+    }
+
+    /**
+     * Validate form and enable/disable continue button
+     */
+    function validateFormAndEnableButton() {
+        try {
+            const classId = cbtElements.classSelect.value;
+            const subjectId = cbtElements.subjectSelect.value;
+            const isValid = classId && subjectId;
+
+            if (isValid) {
+                cbtElements.continueBtn.disabled = false;
+                cbtElements.continueBtn.classList.remove('disabled');
+            } else {
+                cbtElements.continueBtn.disabled = true;
+                cbtElements.continueBtn.classList.add('disabled');
+            }
+        } catch (error) {
+            console.error('Error validating form:', error);
+            cbtElements.continueBtn.disabled = true;
+        }
+    }
+
+    /**
+     * Handle continue button click - navigate to CBT management page
+     */
+    function handleContinueClick() {
+        try {
+            clearErrors();
+
+            // Validate form
+            if (!cbtElements.form.checkValidity()) {
+                showAlert('error', 'Please select both a class and subject.');
+                return;
+            }
+
+            const classId = cbtElements.classSelect.value;
+            const subjectId = cbtElements.subjectSelect.value;
+
+            if (!classId || !subjectId) {
+                showAlert('error', 'Please select both a class and subject.');
+                return;
+            }
+
+            // Get subject name and class name from dropdown
+            const selectedOption = cbtElements.subjectSelect.options[cbtElements.subjectSelect.selectedIndex];
+            const subjectName = selectedOption ? selectedOption.text : 'Unknown';
+            const className = cbtElements.classSelect.options[cbtElements.classSelect.selectedIndex].text;
+
+            // Show loading message
+            cbtElements.continueBtn.disabled = true;
+            cbtElements.continueBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Loading...';
+
+            // Navigate to CBT review/management page where teacher can:
+            // 1. Manually add questions
+            // 2. Review and configure existing questions
+            // 3. Set CBT type (Practice, 1st Test, 2nd Test, Exam)
+            // 4. Set time duration
+            // 5. Publish the exam
+            window.location.href = `/academics/cbt/review/${classId}/${subjectId}/`;
+
+        } catch (error) {
+            console.error('Error handling continue click:', error);
+            showAlert('error', 'An unexpected error occurred. Please try again.');
+            cbtElements.continueBtn.disabled = false;
+            cbtElements.continueBtn.innerHTML = '<i class="fas fa-arrow-right me-2"></i> Continue';
+        }
+    }
+
+    /**
+     * Handle modal open event - reset form
+     */
+    function handleModalOpen() {
+        try {
+            clearErrors();
+            clearElement(cbtElements.alertContainer);
+            cbtElements.classSelect.value = '';
+            cbtElements.subjectSelect.value = '';
+            cbtElements.subjectSelect.disabled = true;
+            validateFormAndEnableButton();
+        } catch (error) {
+            console.error('Error handling modal open:', error);
+        }
+    }
+
+    /**
+     * Populate select element with options
+     */
+    function populateSelectOptions(selectElement, options) {
+        if (!selectElement || !Array.isArray(options)) return;
+
+        selectElement.innerHTML = '<option value="">-- Choose --</option>';
+        
+        options.forEach(option => {
+            if (option && option.id && option.name) {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.id;
+                optionElement.textContent = option.name;
+                selectElement.appendChild(optionElement);
+            }
+        });
+    }
+
+    /**
+     * Show alert message
+     */
+    function showAlert(type, message) {
+        if (!cbtElements.alertContainer) return;
+
+        const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="border-radius: 12px;">
+                <i class="fas ${icon} me-2"></i>
+                <span>${message}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        cbtElements.alertContainer.innerHTML = alertHtml;
+        
+        // Auto-dismiss success messages after 3 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                clearElement(cbtElements.alertContainer);
+            }, 3000);
+        }
+    }
+
+    /**
+     * Clear error messages
+     */
+    function clearErrors() {
+        const errorElements = document.querySelectorAll('[id$="Error"]');
+        errorElements.forEach(el => {
+            el.textContent = '';
+            el.classList.add('d-none');
+        });
+    }
+
+    /**
+     * Clear element content
+     */
+    function clearElement(element) {
+        if (element) {
+            element.innerHTML = '';
+        }
+    }
+</script>
 
 {% endblock %}
