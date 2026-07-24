@@ -6,6 +6,7 @@ app_name = "portal"
 urlpatterns = [
     path("class/<int:class_id>/download-cumulative-zip/", views.download_class_cumulative_zip, name="download_class_cumulative_zip"),
     path("student/download-cumulative/", views.download_cumulative_result, name="download_cumulative_result"),
+    path("student/download-term-result/", views.download_term_result, name="download_term_result"),
     path("change-password/", views.change_password, name="change_password"),
     path("", views.dashboard_redirect, name="dashboard"),
     

@@ -118,6 +118,64 @@
         </div>
     </div>
 
+    <!-- Current Term Progress -->
+    <div class="card border-0 mb-4 shadow-sm" style="border-radius: 16px;">
+        <div class="card-header border-0 bg-white d-flex justify-content-between align-items-center" style="border-radius: 16px 16px 0 0; padding-top: 1rem; padding-bottom: 0.5rem;">
+            <h5 class="fw-bold mb-0" style="color: var(--text-dark);">Current Term Progress <span class="badge bg-primary ms-2">{{ current_term_name }} Term</span></h5>
+        </div>
+        <div class="card-body p-0">
+            {% if current_results %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background: var(--bg-main);">
+                        <tr>
+                            <th style="padding-left: 2rem; border-bottom: 0;">Subject</th>
+                            <th style="border-bottom: 0;" class="text-center">1st Test (20)</th>
+                            <th style="border-bottom: 0;" class="text-center">2nd Test (20)</th>
+                            <th style="border-bottom: 0;" class="text-center">Exam (60)</th>
+                            <th style="border-bottom: 0;" class="text-center">Total (100)</th>
+                            <th style="border-bottom: 0; padding-right: 2rem;" class="text-center">Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in current_results %}
+                        <tr>
+                            <td style="padding-left: 2rem; vertical-align: middle;" class="fw-bold text-dark">
+                                {{ result.subject.name }}
+                            </td>
+                            <td class="text-center" style="vertical-align: middle;">
+                                {% if result.test1 is not None %}{{ result.test1 }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                            <td class="text-center" style="vertical-align: middle;">
+                                {% if result.test2 is not None %}{{ result.test2 }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                            <td class="text-center" style="vertical-align: middle;">
+                                {% if result.exam is not None %}{{ result.exam }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                            <td class="text-center fw-bold" style="vertical-align: middle; color: var(--primary-color);">
+                                {% if result.total is not None %}{{ result.total }}{% else %}<span class="text-muted">-</span>{% endif %}
+                            </td>
+                            <td class="text-center fw-bold" style="vertical-align: middle; padding-right: 2rem;">
+                                {% if result.grade %}
+                                    <span class="badge {% if result.grade == 'A' %}bg-success{% elif result.grade == 'F' %}bg-danger{% else %}bg-info{% endif %} px-2 py-1">{{ result.grade }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center text-muted">
+                <i class="fas fa-clipboard-list fa-3x mb-3 opacity-25"></i>
+                <p class="mb-0">No scores have been entered for the current term yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Results Table -->
     <div class="card border-0 shadow-sm" style="border-radius: 16px;">
         <div class="card-header border-0 bg-white" style="border-radius: 16px 16px 0 0;">
@@ -158,7 +216,7 @@
                                 {% endif %}
                             </td>
                             <td class="text-end" style="padding-right: 2rem; vertical-align: middle;">
-                                <a href="{% url 'portal:download_cumulative_result' %}" class="btn btn-sm btn-light border shadow-sm rounded-pill px-3 fw-bold" style="color: var(--primary-color);">
+                                <a href="{% url 'portal:download_term_result' %}?session_id={{ summary.academic_session.id }}&term={{ summary.term }}" class="btn btn-sm btn-light border shadow-sm rounded-pill px-3 fw-bold" style="color: var(--primary-color);">
                                     <i class="fas fa-download me-1"></i> PDF
                                 </a>
                             </td>

@@ -31,6 +31,10 @@ def format_position(position):
     """Format position with ordinal suffix"""
     if position is None:
         return '-'
+    try:
+        position = int(position)
+    except (ValueError, TypeError):
+        return str(position)
     return f"{position}{get_ordinal_suffix(position)}"
 
 

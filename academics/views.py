@@ -148,7 +148,7 @@ def cbt_start(request, subject_id):
 	).exists()
 	
 	if existing_completed and exam.cbt_type != 'practice':
-		# Only allow retake for practice exams
+		# Only allow one attempt for non-practice CBT types
 		from django.contrib import messages
 		messages.error(request, f"You have already completed this {exam.get_cbt_type_display()}. Retakes are not allowed.")
 		return redirect('portal:student_dashboard')

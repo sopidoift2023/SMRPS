@@ -96,6 +96,134 @@ def download_cumulative_result(request):
     return response
 
 
+@login_required
+def download_term_result(request):
+    """Download a single term result PDF for the logged-in student."""
+    user = request.user
+    if user.role != User.Role.STUDENT:
+        return render(request, "portal/unauthorized.html")
+
+    student = get_object_or_404(Student, user=user)
+    session_id = request.GET.get('session_id')
+    term = request.GET.get('term')
+
+    if not session_id or not term:
+        return render(request, "portal/unauthorized.html", {"message": "Missing session or term."})
+
+    academic_session = get_object_or_404(AcademicSession, id=session_id, school=student.school)
+    school_class = student.school_class
+    school = student.school
+
+    # Get all subjects for this class
+    all_subjects = Subject.objects.filter(
+        class_subjects__school_class=school_class
+    ).distinct().order_by('name')
+
+    # Build scores dict for this student/term
+    scores_by_subject = {}
+    total_score = 0
+    subject_count = 0
+
+    for subject in all_subjects:
+        try:
+            result = StudentResult.objects.get(
+                student=student,
+                school_class=school_class,
+                subject=subject,
+                academic_session=academic_session,
+                term=term
+            )
+            scores_by_subject[subject.name] = {
+                'test1': result.test1,
+                'test2': result.test2,
+                'exam': result.exam,
+                'total': result.total,
+                'grade': result.grade,
+                'remark': result.remark,
+                'subject_position': result.subject_position,
+                'subject_highest': result.subject_highest,
+            }
+            total_score += result.total
+            subject_count += 1
+        except StudentResult.DoesNotExist:
+            scores_by_subject[subject.name] = {
+                'test1': 0, 'test2': 0, 'exam': 0, 'total': 0,
+                'grade': '-', 'remark': '-',
+                'subject_position': None, 'subject_highest': 0,
+            }
+
+    average = (total_score / subject_count) if subject_count > 0 else 0
+
+    # Get class position from TermResultSummary if available
+    summary = TermResultSummary.objects.filter(
+        student=student,
+        school_class=school_class,
+        academic_session=academic_session,
+        term=term
+    ).first()
+    position = summary.position if summary else None
+
+    student_data = {
+        'student_obj': student,
+        'student': str(student),
+        'admission': student.admission_number,
+        'subjects': scores_by_subject,
+        'total': total_score,
+        'average': round(average, 2),
+        'position': position,
+    }
+
+    # Get supplementary data
+    attendance = StudentAttendance.objects.filter(
+        student=student, school_class=school_class,
+        academic_session=academic_session, term=term
+    ).first()
+    affective = StudentAffectiveTraits.objects.filter(
+        student=student, school_class=school_class,
+        academic_session=academic_session, term=term
+    ).first()
+    psychomotor = StudentPsychomotorTraits.objects.filter(
+        student=student, school_class=school_class,
+        academic_session=academic_session, term=term
+    ).first()
+    term_report = StudentTermReport.objects.filter(
+        student=student, school_class=school_class,
+        academic_session=academic_session, term=term
+    ).first()
+    class_info = ClassTermInfo.objects.filter(
+        school_class=school_class,
+        academic_session=academic_session, term=term
+    ).first()
+
+    # Collect all-term totals for the session (for the 1st/2nd/3rd term columns)
+    all_session_results = StudentResult.objects.filter(
+        student=student, academic_session=academic_session
+    ).select_related('subject')
+    all_term_results = {}
+    for r in all_session_results:
+        all_term_results.setdefault(r.term, {})[r.subject.name] = {
+            'total': r.total, 'grade': r.grade
+        }
+
+    pdf_buffer = generate_student_result_pdf(
+        school=school,
+        school_class=school_class,
+        academic_session=academic_session,
+        term=term,
+        student_data=student_data,
+        subjects=all_subjects,
+        attendance_data=attendance,
+        affective_traits=affective,
+        psychomotor_traits=psychomotor,
+        term_report=term_report,
+        class_info=class_info,
+        all_term_results=all_term_results,
+    )
+
+    filename = f"{student.last_name}_{student.first_name}_{term}_Term_{academic_session.name}.pdf"
+    return FileResponse(pdf_buffer, as_attachment=True, filename=filename)
+
+
 def home(request):
     """Home page view"""
     return render(request, "portal/home.html")
@@ -259,9 +387,28 @@ def student_dashboard(request):
     summaries = TermResultSummary.objects.filter(student=student).select_related('academic_session').order_by('-academic_session__name', '-term')
     latest = summaries.first() if summaries else None
 
+    # Get current active term
+    from schools.models import Term
+    current_term_obj = Term.objects.filter(session=current_session, is_active=True).first() if current_session else None
+    
+    # Map Term model enum ("FIRST") to StudentResult string ("First")
+    term_mapping = {"FIRST": "First", "SECOND": "Second", "THIRD": "Third"}
+    current_term_name = term_mapping.get(current_term_obj.name, "First") if current_term_obj else "First"
+
+    # Get current term results to monitor progress
+    current_results = []
+    if current_session:
+        current_results = StudentResult.objects.filter(
+            student=student,
+            academic_session=current_session,
+            term=current_term_name
+        ).select_related('subject').order_by('subject__name')
+
     context = {
         'student': student,
         'current_session': current_session,
+        'current_term_name': current_term_name,
+        'current_results': current_results,
         'summaries': summaries,
         'latest': latest,
     }
@@ -350,29 +497,49 @@ def get_class_subjects(request):
     """AJAX endpoint to get subjects for a class"""
     class_id = request.GET.get('class_id')
     user = request.user
-    
+
     try:
         teacher_profile = TeacherProfile.objects.get(user=user)
     except TeacherProfile.DoesNotExist:
         return JsonResponse({'error': 'Teacher profile not found'}, status=404)
-    
+
     if not class_id:
         return JsonResponse([], safe=False)
-    
+
     # Verify teacher has access to this class
     try:
         school_class = SchoolClass.objects.get(id=class_id, school=teacher_profile.school)
     except SchoolClass.DoesNotExist:
         return JsonResponse({'error': 'Access denied'}, status=403)
-    
-    # Get subjects for this class taught by this teacher
-    subjects = Subject.objects.filter(
-        class_subjects__school_class=school_class,
-        class_subjects__teacher=teacher_profile,
-        school=teacher_profile.school
-    ).values('id', 'name').distinct()
-    
-    return JsonResponse(list(subjects), safe=False)
+
+    # Check if this teacher is the form teacher of this class safely
+    is_form_teacher = (school_class.form_teacher_id == teacher_profile.id)
+
+    subjects_list = []
+
+    if is_form_teacher:
+        # Form teacher sees all subjects in the class
+        subjects_qs = Subject.objects.filter(
+            class_subjects__school_class=school_class,
+        ).values('id', 'name').distinct()
+        subjects_list = list(subjects_qs)
+    else:
+        # Subject teacher sees only their assigned subjects
+        subjects_qs = Subject.objects.filter(
+            class_subjects__school_class=school_class,
+            class_subjects__teacher=teacher_profile,
+        ).values('id', 'name').distinct()
+        subjects_list = list(subjects_qs)
+
+        # Fallback: if no teacher-linked subjects found, return all class subjects
+        # (handles cases where ClassSubject records have no teacher assigned yet)
+        if not subjects_list:
+            fallback_qs = Subject.objects.filter(
+                class_subjects__school_class=school_class,
+            ).values('id', 'name').distinct()
+            subjects_list = list(fallback_qs)
+
+    return JsonResponse(subjects_list, safe=False)
 
 @login_required
 @require_GET
