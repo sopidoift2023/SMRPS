@@ -56,7 +56,7 @@ class StudentQuickAddForm(forms.ModelForm):
     """Form for teachers to quickly add students to a class"""
     class Meta:
         model = Student
-        fields = ['first_name', 'last_name', 'admission_number', 'gender', 'date_of_birth']
+        fields = ['first_name', 'last_name', 'admission_number']
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -69,12 +69,5 @@ class StudentQuickAddForm(forms.ModelForm):
             'admission_number': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Admission Number'
-            }),
-            'gender': forms.Select(attrs={
-                'class': 'form-select'
-            }),
-            'date_of_birth': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
             }),
         }

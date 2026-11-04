@@ -909,35 +909,51 @@ def teacher_class_management(request, class_id):
             teacher_profile = None
     except TeacherProfile.DoesNotExist:
         return render(request, "portal/unauthorized.html")
-    
-    try:
-        school_class = SchoolClass.objects.get(
+
+    if user.role == User.Role.SCHOOL_ADMIN:
+        school_class = SchoolClass.objects.get(id=class_id, school=user.school)
+        is_form_teacher = True
+        can_manage_students = True
+    else:
+        school_class = SchoolClass.objects.filter(
             id=class_id,
-            school=teacher_profile.school
-        )
-    except SchoolClass.DoesNotExist:
-        return render(request, "portal/unauthorized.html")
-    
+            school=teacher_profile.school,
+        ).select_related('form_teacher__user').first()
+
+        if not school_class:
+            return render(request, "portal/unauthorized.html")
+
+        is_form_teacher = school_class.form_teacher_id == teacher_profile.id
+        is_assigned_teacher = ClassSubject.objects.filter(
+            school_class=school_class,
+            teacher=teacher_profile,
+        ).exists()
+
+        if not (is_form_teacher or is_assigned_teacher):
+            return render(request, "portal/unauthorized.html")
+
+        can_manage_students = is_form_teacher
+
     # Get all students in the class
     students = school_class.students.filter(is_active=True).order_by('last_name', 'first_name')
-    
-    # Get all subjects taught by this teacher in this class
-    subjects = Subject.objects.filter(
-        class_subjects__school_class=school_class,
-        class_subjects__teacher=teacher_profile
-    ).distinct()
-    
+
+    # Get all subjects for this teacher in this class; school admins can see all.
+    if user.role == User.Role.SCHOOL_ADMIN:
+        subjects = Subject.objects.filter(school=user.school).distinct()
+    else:
+        subjects = Subject.objects.filter(
+            class_subjects__school_class=school_class,
+            class_subjects__teacher=teacher_profile
+        ).distinct()
+
     # Get academic sessions
     sessions = AcademicSession.objects.filter(
-        school=teacher_profile.school
+        school=school_class.school
     ).order_by('-name')
-    
+
     from .forms import StudentQuickAddForm
     add_student_form = StudentQuickAddForm()
-    
-    # Check if current teacher is the form teacher for this class
-    is_form_teacher = teacher_profile and school_class.form_teacher == teacher_profile or user.role == User.Role.SCHOOL_ADMIN
-    
+
     context = {
         'school_class': school_class,
         'students': students,
@@ -946,6 +962,7 @@ def teacher_class_management(request, class_id):
         'add_student_form': add_student_form,
         'terms': [('First', 'First Term'), ('Second', 'Second Term'), ('Third', 'Third Term')],
         'is_form_teacher': is_form_teacher,
+        'can_manage_students': can_manage_students,
     }
     
     return render(request, "portal/teacher_class_dashboard.html", context)
@@ -956,31 +973,31 @@ def teacher_class_management(request, class_id):
 def teacher_add_student(request, class_id):
     """AJAX endpoint to add a new student to a class"""
     user = request.user
-    
-    if user.role != User.Role.TEACHER:
+
+    if user.role == User.Role.SCHOOL_ADMIN:
+        school = user.school
+        school_class = get_object_or_404(SchoolClass, id=class_id, school=school)
+    elif user.role == User.Role.TEACHER:
+        try:
+            teacher_profile = TeacherProfile.objects.get(user=user)
+        except TeacherProfile.DoesNotExist:
+            return JsonResponse({'error': 'Teacher profile not found'}, status=404)
+
+        school_class = get_object_or_404(SchoolClass, id=class_id, school=teacher_profile.school)
+        if school_class.form_teacher_id != teacher_profile.id:
+            return JsonResponse({'error': 'Only form teacher can add students to this class'}, status=403)
+        school = teacher_profile.school
+    else:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
-    
-    try:
-        teacher_profile = TeacherProfile.objects.get(user=user)
-    except TeacherProfile.DoesNotExist:
-        return JsonResponse({'error': 'Teacher profile not found'}, status=404)
-    
-    try:
-        school_class = SchoolClass.objects.get(
-            id=class_id,
-            school=teacher_profile.school
-        )
-    except SchoolClass.DoesNotExist:
-        return JsonResponse({'error': 'Class not found'}, status=404)
-    
+
     from .forms import StudentQuickAddForm
     form = StudentQuickAddForm(request.POST)
-    
+
     if form.is_valid():
         try:
             with transaction.atomic():
                 student = Student(
-                    school=teacher_profile.school,
+                    school=school,
                     school_class=school_class,
                     first_name=form.cleaned_data['first_name'],
                     last_name=form.cleaned_data['last_name'],
@@ -990,7 +1007,7 @@ def teacher_add_student(request, class_id):
                 )
                 student.full_clean()
                 student.save()
-                
+
                 return JsonResponse({
                     'success': True,
                     'student': {
@@ -1005,7 +1022,7 @@ def teacher_add_student(request, class_id):
                 'error': str(e),
                 'message': 'Error adding student'
             }, status=400)
-    
+
     errors = {field: error for field, error in form.errors.items()}
     return JsonResponse({
         'error': 'Form validation failed',
